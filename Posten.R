@@ -51,7 +51,7 @@ write.table(p_route[,c("ID","Lat","Lon","Schwere","Beschreibung")],
 # 1 Photo
 # 2 Rätsel
 # 3 Bonus                         B                                       B           
-gr <- c(1,1,1,2,2,1,2,1,1,3,2,1,3,1,3,2,3,3,3,3,3,2,1,1,2,1,2,1,1,1,3,1,3,2,1,1,1,1,2,1,1,1,1)
+gr <- c(1,1,1,2,2,1,2,1,1,3,2,1,3,1,3,2,3,3,3,3,3,2,1,1,2,1,2,2,1,1,3,1,3,2,1,1,1,1,2,1,1,1,1)
 p_route$col <- c("black","red","orange")[gr]
 
 # Posten Karte ----
@@ -64,7 +64,7 @@ load("osmap.Rdata")
 ppr <- projectPoints(Lat,Lon, data=p_route, to=posm(), quiet=TRUE)
 
 {
-pdf("Karte_Templiner.pdf", width=8.27, height=11.96)
+pdf("Templiner_Karte.pdf", width=8.27, height=11.96)
 pointsMap(Lat,Lon, data=p_route, map=osmap14, quiet=TRUE, pch=1, cex=1.5, col=p_route$col)
 text(ppr$x+70, ppr$y, p_route$ID,      cex=1,   adj=c(0,0), col=p_route$col)
 textField(1450070,6868037, "12 km")
@@ -90,6 +90,27 @@ htmlwidgets::saveWidget(map, "index.html", selfcontained=TRUE)
 
 
 
+# Raetsel ----
+
+r <- read.table(sep="\t", as.is=TRUE, text="Schafgraben
+Spiel
+Absteigen
+Am Gaisberg 12a
+Wentorfgraben
+1942
+weiß
+Havel
+Der älteste
+Kieskutenberg
+Steganlagen
+")[,1]
+cat(sapply(r, function(d) paste(rep("- ", nchar(d)), collapse="")), sep="\n")
+
+
+txt <- "Segeln auf der Havel - zwischen Werder (Havel) und Brandenburg an der Havel rund 25 km ohne eine einzige Brücke oder Schleuse.
+Verträumte und stille Nebengewässer für Kanuten - Unser Tipp: Die Wublitz bei Potsdam, die Emster Gewässer nach Lehnin und der Beetzsee nördlich von Brandenburg an der Havel. Viele"
+
+cat(unlist(strsplit(gsub(" ", "", txt),"")), sep="\n")
 
 
 # OSMtracker GPX Datei ----

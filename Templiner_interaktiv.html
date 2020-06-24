@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Bike Challenge</title>
+<title>Bike Challenge Templiner See</title>
 <script>(function() {
   // If window.HTMLWidgets is already defined, then use it; otherwise create a
   // new object. This allows preceding code to set options that affect the
@@ -239,38 +239,13 @@
           theseArgs = theseArgs.concat([task.data]);
           task = task.code;
         }
-        var taskFunc = tryEval(task);
+        var taskFunc = eval("(" + task + ")");
         if (typeof(taskFunc) !== "function") {
           throw new Error("Task must be a function! Source:\n" + task);
         }
         taskFunc.apply(target, theseArgs);
       });
     }
-  }
-
-  // Attempt eval() both with and without enclosing in parentheses.
-  // Note that enclosing coerces a function declaration into
-  // an expression that eval() can parse
-  // (otherwise, a SyntaxError is thrown)
-  function tryEval(code) {
-    var result = null;
-    try {
-      result = eval(code);
-    } catch(error) {
-      if (!error instanceof SyntaxError) {
-        throw error;
-      }
-      try {
-        result = eval("(" + code + ")");
-      } catch(e) {
-        if (e instanceof SyntaxError) {
-          throw error;
-        } else {
-          throw e;
-        }
-      }
-    }
-    return result;
   }
 
   function initSizing(el) {
@@ -665,56 +640,17 @@
     invokePostRenderHandlers();
   }
 
-
-  function has_jQuery3() {
-    if (!window.jQuery) {
-      return false;
-    }
-    var $version = window.jQuery.fn.jquery;
-    var $major_version = parseInt($version.split(".")[0]);
-    return $major_version >= 3;
-  }
-
-  /*
-  / Shiny 1.4 bumped jQuery from 1.x to 3.x which means jQuery's
-  / on-ready handler (i.e., $(fn)) is now asyncronous (i.e., it now
-  / really means $(setTimeout(fn)).
-  / https://jquery.com/upgrade-guide/3.0/#breaking-change-document-ready-handlers-are-now-asynchronous
-  /
-  / Since Shiny uses $() to schedule initShiny, shiny>=1.4 calls initShiny
-  / one tick later than it did before, which means staticRender() is
-  / called renderValue() earlier than (advanced) widget authors might be expecting.
-  / https://github.com/rstudio/shiny/issues/2630
-  /
-  / For a concrete example, leaflet has some methods (e.g., updateBounds)
-  / which reference Shiny methods registered in initShiny (e.g., setInputValue).
-  / Since leaflet is privy to this life-cycle, it knows to use setTimeout() to
-  / delay execution of those methods (until Shiny methods are ready)
-  / https://github.com/rstudio/leaflet/blob/18ec981/javascript/src/index.js#L266-L268
-  /
-  / Ideally widget authors wouldn't need to use this setTimeout() hack that
-  / leaflet uses to call Shiny methods on a staticRender(). In the long run,
-  / the logic initShiny should be broken up so that method registration happens
-  / right away, but binding happens later.
-  */
-  function maybeStaticRenderLater() {
-    if (shinyMode && has_jQuery3()) {
-      window.jQuery(window.HTMLWidgets.staticRender);
-    } else {
-      window.HTMLWidgets.staticRender();
-    }
-  }
-
+  // Wait until after the document has loaded to render the widgets.
   if (document.addEventListener) {
     document.addEventListener("DOMContentLoaded", function() {
       document.removeEventListener("DOMContentLoaded", arguments.callee, false);
-      maybeStaticRenderLater();
+      window.HTMLWidgets.staticRender();
     }, false);
   } else if (document.attachEvent) {
     document.attachEvent("onreadystatechange", function() {
       if (document.readyState === "complete") {
         document.detachEvent("onreadystatechange", arguments.callee);
-        maybeStaticRenderLater();
+        window.HTMLWidgets.staticRender();
       }
     });
   }
@@ -802,7 +738,7 @@
       if (o !== null && typeof o === "object" && part in o) {
         if (i == (l - 1)) { // if we are at the end of the line then evalulate
           if (typeof o[part] === "string")
-            o[part] = tryEval(o[part]);
+            o[part] = eval("(" + o[part] + ")");
         } else { // otherwise continue to next embedded object
           o = o[part];
         }
@@ -1261,7 +1197,7 @@ cursor: pointer;
 z-index: auto;
 }
 </style>
-<script>(function(){function r(e,n,t){function o(i,f){if(!n[i]){if(!e[i]){var c="function"==typeof require&&require;if(!f&&c)return c(i,!0);if(u)return u(i,!0);var a=new Error("Cannot find module '"+i+"'");throw a.code="MODULE_NOT_FOUND",a}var p=n[i]={exports:{}};e[i][0].call(p.exports,function(r){var n=e[i][1][r];return o(n||r)},p,p.exports,r,e,n,t)}return n[i].exports}for(var u="function"==typeof require&&require,i=0;i<t.length;i++)o(t[i]);return o}return r})()({1:[function(require,module,exports){
+<script>(function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -1448,7 +1384,8 @@ function getCRS(crsOptions) {
         crsOptions.options.transformation = _leaflet2.default.Transformation(crsOptions.options.transformation[0], crsOptions.options.transformation[1], crsOptions.options.transformation[2], crsOptions.options.transformation[3]);
       }
       // L.Proj.CRS.TMS is deprecated as of Leaflet 1.x, fall back to L.Proj.CRS
-      //crs = new Proj4Leaflet.CRS.TMS(crsOptions.code, crsOptions.proj4def, crsOptions.projectedBounds, crsOptions.options);
+      //crs = new Proj4Leaflet.CRS.TMS(crsOptions.code, crsOptions.proj4def,
+      //crsOptions.projectedBounds, crsOptions.options);
       crs = new _proj4leaflet2.default.CRS(crsOptions.code, crsOptions.proj4def, crsOptions.options);
       break;
   }
@@ -1462,6 +1399,8 @@ function getCRS(crsOptions) {
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
 
 var _createClass = function () { function defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } } return function (Constructor, protoProps, staticProps) { if (protoProps) defineProperties(Constructor.prototype, protoProps); if (staticProps) defineProperties(Constructor, staticProps); return Constructor; }; }();
 
@@ -1545,11 +1484,17 @@ var DataFrame = function () {
 
       var colIndex = -1;
       if (typeof col === "undefined") {
-        var rowData = {};
-        this.colnames.forEach(function (name, i) {
-          rowData[name] = _this3.columns[i][row % _this3.columns[i].length];
-        });
-        return rowData;
+        var _ret = function () {
+          var rowData = {};
+          _this3.colnames.forEach(function (name, i) {
+            rowData[name] = _this3.columns[i][row % _this3.columns[i].length];
+          });
+          return {
+            v: rowData
+          };
+        }();
+
+        if ((typeof _ret === "undefined" ? "undefined" : _typeof(_ret)) === "object") return _ret.v;
       } else if (typeof col === "string") {
         colIndex = this._colIndex(col);
       } else if (typeof col === "number") {
@@ -1897,40 +1842,42 @@ _htmlwidgets2.default.widget({
 
         // Check if the map is rendered statically (no output binding)
         if (_htmlwidgets2.default.shinyMode && /\bshiny-bound-output\b/.test(el.className)) {
+          (function () {
 
-          map.id = el.id;
+            map.id = el.id;
 
-          // Store the map on the element so we can find it later by ID
-          (0, _jquery2.default)(el).data("leaflet-map", map);
+            // Store the map on the element so we can find it later by ID
+            (0, _jquery2.default)(el).data("leaflet-map", map);
 
-          // When the map is clicked, send the coordinates back to the app
-          map.on("click", function (e) {
-            _shiny2.default.onInputChange(map.id + "_click", {
-              lat: e.latlng.lat,
-              lng: e.latlng.lng,
-              ".nonce": Math.random() // Force reactivity if lat/lng hasn't changed
+            // When the map is clicked, send the coordinates back to the app
+            map.on("click", function (e) {
+              _shiny2.default.onInputChange(map.id + "_click", {
+                lat: e.latlng.lat,
+                lng: e.latlng.lng,
+                ".nonce": Math.random() // Force reactivity if lat/lng hasn't changed
+              });
             });
-          });
 
-          var groupTimerId = null;
+            var groupTimerId = null;
 
-          map.on("moveend", function (e) {
-            updateBounds(e.target);
-          }).on("layeradd layerremove", function (e) {
-            // If the layer that's coming or going is a group we created, tell
-            // the server.
-            if (map.layerManager.getGroupNameFromLayerGroup(e.layer)) {
-              // But to avoid chattiness, coalesce events
-              if (groupTimerId) {
-                clearTimeout(groupTimerId);
-                groupTimerId = null;
+            map.on("moveend", function (e) {
+              updateBounds(e.target);
+            }).on("layeradd layerremove", function (e) {
+              // If the layer that's coming or going is a group we created, tell
+              // the server.
+              if (map.layerManager.getGroupNameFromLayerGroup(e.layer)) {
+                // But to avoid chattiness, coalesce events
+                if (groupTimerId) {
+                  clearTimeout(groupTimerId);
+                  groupTimerId = null;
+                }
+                groupTimerId = setTimeout(function () {
+                  groupTimerId = null;
+                  _shiny2.default.onInputChange(map.id + "_groups", map.layerManager.getVisibleGroups());
+                }, 100);
               }
-              groupTimerId = setTimeout(function () {
-                groupTimerId = null;
-                _shiny2.default.onInputChange(map.id + "_groups", map.layerManager.getVisibleGroups());
-              }, 100);
-            }
-          });
+            });
+          })();
         }
         this.doRenderValue(data, map);
       },
@@ -2179,73 +2126,77 @@ var LayerManager = function () {
 
       // Update crosstalk group index
       if (ctGroup) {
-        if (layer.setStyle) {
-          // Need to save this info so we know what to set opacity to later
-          layer.options.origOpacity = typeof layer.options.opacity !== "undefined" ? layer.options.opacity : 0.5;
-          layer.options.origFillOpacity = typeof layer.options.fillOpacity !== "undefined" ? layer.options.fillOpacity : 0.2;
-        }
+        (function () {
+          if (layer.setStyle) {
+            // Need to save this info so we know what to set opacity to later
+            layer.options.origOpacity = typeof layer.options.opacity !== "undefined" ? layer.options.opacity : 0.5;
+            layer.options.origFillOpacity = typeof layer.options.fillOpacity !== "undefined" ? layer.options.fillOpacity : 0.2;
+          }
 
-        var ctg = this._byCrosstalkGroup[ctGroup];
-        if (!ctg) {
-          ctg = this._byCrosstalkGroup[ctGroup] = {};
-          var crosstalk = global.crosstalk;
+          var ctg = _this._byCrosstalkGroup[ctGroup];
+          if (!ctg) {
+            (function () {
+              ctg = _this._byCrosstalkGroup[ctGroup] = {};
+              var crosstalk = global.crosstalk;
 
-          var handleFilter = function handleFilter(e) {
-            if (!e.value) {
-              var groupKeys = Object.keys(ctg);
-              for (var i = 0; i < groupKeys.length; i++) {
-                var key = groupKeys[i];
-                var _layerInfo = _this._byStamp[ctg[key]];
-                _this._setVisibility(_layerInfo, true);
-              }
-            } else {
-              var selectedKeys = {};
-              for (var _i = 0; _i < e.value.length; _i++) {
-                selectedKeys[e.value[_i]] = true;
-              }
-              var _groupKeys = Object.keys(ctg);
-              for (var _i2 = 0; _i2 < _groupKeys.length; _i2++) {
-                var _key = _groupKeys[_i2];
-                var _layerInfo2 = _this._byStamp[ctg[_key]];
-                _this._setVisibility(_layerInfo2, selectedKeys[_groupKeys[_i2]]);
-              }
-            }
-          };
-          var filterHandle = new crosstalk.FilterHandle(ctGroup);
-          filterHandle.on("change", handleFilter);
+              var handleFilter = function handleFilter(e) {
+                if (!e.value) {
+                  var groupKeys = Object.keys(ctg);
+                  for (var i = 0; i < groupKeys.length; i++) {
+                    var key = groupKeys[i];
+                    var _layerInfo = _this._byStamp[ctg[key]];
+                    _this._setVisibility(_layerInfo, true);
+                  }
+                } else {
+                  var selectedKeys = {};
+                  for (var _i = 0; _i < e.value.length; _i++) {
+                    selectedKeys[e.value[_i]] = true;
+                  }
+                  var _groupKeys = Object.keys(ctg);
+                  for (var _i2 = 0; _i2 < _groupKeys.length; _i2++) {
+                    var _key = _groupKeys[_i2];
+                    var _layerInfo2 = _this._byStamp[ctg[_key]];
+                    _this._setVisibility(_layerInfo2, selectedKeys[_groupKeys[_i2]]);
+                  }
+                }
+              };
+              var filterHandle = new crosstalk.FilterHandle(ctGroup);
+              filterHandle.on("change", handleFilter);
 
-          var handleSelection = function handleSelection(e) {
-            if (!e.value || !e.value.length) {
-              var groupKeys = Object.keys(ctg);
-              for (var i = 0; i < groupKeys.length; i++) {
-                var key = groupKeys[i];
-                var _layerInfo3 = _this._byStamp[ctg[key]];
-                _this._setOpacity(_layerInfo3, 1.0);
-              }
-            } else {
-              var selectedKeys = {};
-              for (var _i3 = 0; _i3 < e.value.length; _i3++) {
-                selectedKeys[e.value[_i3]] = true;
-              }
-              var _groupKeys2 = Object.keys(ctg);
-              for (var _i4 = 0; _i4 < _groupKeys2.length; _i4++) {
-                var _key2 = _groupKeys2[_i4];
-                var _layerInfo4 = _this._byStamp[ctg[_key2]];
-                _this._setOpacity(_layerInfo4, selectedKeys[_groupKeys2[_i4]] ? 1.0 : 0.2);
-              }
-            }
-          };
-          var selHandle = new crosstalk.SelectionHandle(ctGroup);
-          selHandle.on("change", handleSelection);
+              var handleSelection = function handleSelection(e) {
+                if (!e.value || !e.value.length) {
+                  var groupKeys = Object.keys(ctg);
+                  for (var i = 0; i < groupKeys.length; i++) {
+                    var key = groupKeys[i];
+                    var _layerInfo3 = _this._byStamp[ctg[key]];
+                    _this._setOpacity(_layerInfo3, 1.0);
+                  }
+                } else {
+                  var selectedKeys = {};
+                  for (var _i3 = 0; _i3 < e.value.length; _i3++) {
+                    selectedKeys[e.value[_i3]] = true;
+                  }
+                  var _groupKeys2 = Object.keys(ctg);
+                  for (var _i4 = 0; _i4 < _groupKeys2.length; _i4++) {
+                    var _key2 = _groupKeys2[_i4];
+                    var _layerInfo4 = _this._byStamp[ctg[_key2]];
+                    _this._setOpacity(_layerInfo4, selectedKeys[_groupKeys2[_i4]] ? 1.0 : 0.2);
+                  }
+                }
+              };
+              var selHandle = new crosstalk.SelectionHandle(ctGroup);
+              selHandle.on("change", handleSelection);
 
-          setTimeout(function () {
-            handleFilter({ value: filterHandle.filteredKeys });
-            handleSelection({ value: selHandle.value });
-          }, 100);
-        }
+              setTimeout(function () {
+                handleFilter({ value: filterHandle.filteredKeys });
+                handleSelection({ value: selHandle.value });
+              }, 100);
+            })();
+          }
 
-        if (!ctg[ctKey]) ctg[ctKey] = [];
-        ctg[ctKey].push(stamp);
+          if (!ctg[ctKey]) ctg[ctKey] = [];
+          ctg[ctKey].push(stamp);
+        })();
       }
 
       // Add to container
@@ -2490,6 +2441,8 @@ exports.default = LayerManager;
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+
+var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) { return typeof obj; } : function (obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol ? "symbol" : typeof obj; };
 
 var _jquery = require("./global/jquery");
 
@@ -2817,62 +2770,68 @@ methods.addAwesomeMarkers = function (lat, lng, icon, layerId, group, options, p
 function addLayers(map, category, df, layerFunc) {
   var _loop3 = function _loop3(i) {
     (function () {
+      var _this4 = this;
+
       var layer = layerFunc(df, i);
       if (!_jquery2.default.isEmptyObject(layer)) {
-        var thisId = df.get(i, "layerId");
-        var thisGroup = df.get(i, "group");
-        this.layerManager.addLayer(layer, category, thisId, thisGroup, df.get(i, "ctGroup", true), df.get(i, "ctKey", true));
-        if (layer.bindPopup) {
-          var popup = df.get(i, "popup");
-          var popupOptions = df.get(i, "popupOptions");
-          if (popup !== null) {
-            if (popupOptions !== null) {
-              layer.bindPopup(popup, popupOptions);
-            } else {
-              layer.bindPopup(popup);
-            }
-          }
-        }
-        if (layer.bindTooltip) {
-          var label = df.get(i, "label");
-          var labelOptions = df.get(i, "labelOptions");
-          if (label !== null) {
-            if (labelOptions !== null) {
-              layer.bindTooltip(label, labelOptions);
-            } else {
-              layer.bindTooltip(label);
-            }
-          }
-        }
-        layer.on("click", mouseHandler(this.id, thisId, thisGroup, category + "_click"), this);
-        layer.on("mouseover", mouseHandler(this.id, thisId, thisGroup, category + "_mouseover"), this);
-        layer.on("mouseout", mouseHandler(this.id, thisId, thisGroup, category + "_mouseout"), this);
-        var highlightStyle = df.get(i, "highlightOptions");
-
-        if (!_jquery2.default.isEmptyObject(highlightStyle)) {
-
-          var defaultStyle = {};
-          _jquery2.default.each(highlightStyle, function (k, v) {
-            if (k != "bringToFront" && k != "sendToBack") {
-              if (df.get(i, k)) {
-                defaultStyle[k] = df.get(i, k);
+        (function () {
+          var thisId = df.get(i, "layerId");
+          var thisGroup = df.get(i, "group");
+          _this4.layerManager.addLayer(layer, category, thisId, thisGroup, df.get(i, "ctGroup", true), df.get(i, "ctKey", true));
+          if (layer.bindPopup) {
+            var popup = df.get(i, "popup");
+            var popupOptions = df.get(i, "popupOptions");
+            if (popup !== null) {
+              if (popupOptions !== null) {
+                layer.bindPopup(popup, popupOptions);
+              } else {
+                layer.bindPopup(popup);
               }
             }
-          });
+          }
+          if (layer.bindTooltip) {
+            var label = df.get(i, "label");
+            var labelOptions = df.get(i, "labelOptions");
+            if (label !== null) {
+              if (labelOptions !== null) {
+                layer.bindTooltip(label, labelOptions);
+              } else {
+                layer.bindTooltip(label);
+              }
+            }
+          }
+          layer.on("click", mouseHandler(_this4.id, thisId, thisGroup, category + "_click"), _this4);
+          layer.on("mouseover", mouseHandler(_this4.id, thisId, thisGroup, category + "_mouseover"), _this4);
+          layer.on("mouseout", mouseHandler(_this4.id, thisId, thisGroup, category + "_mouseout"), _this4);
+          var highlightStyle = df.get(i, "highlightOptions");
 
-          layer.on("mouseover", function (e) {
-            this.setStyle(highlightStyle);
-            if (highlightStyle.bringToFront) {
-              this.bringToFront();
-            }
-          });
-          layer.on("mouseout", function (e) {
-            this.setStyle(defaultStyle);
-            if (highlightStyle.sendToBack) {
-              this.bringToBack();
-            }
-          });
-        }
+          if (!_jquery2.default.isEmptyObject(highlightStyle)) {
+            (function () {
+
+              var defaultStyle = {};
+              _jquery2.default.each(highlightStyle, function (k, v) {
+                if (k != "bringToFront" && k != "sendToBack") {
+                  if (df.get(i, k)) {
+                    defaultStyle[k] = df.get(i, k);
+                  }
+                }
+              });
+
+              layer.on("mouseover", function (e) {
+                this.setStyle(highlightStyle);
+                if (highlightStyle.bringToFront) {
+                  this.bringToFront();
+                }
+              });
+              layer.on("mouseout", function (e) {
+                this.setStyle(defaultStyle);
+                if (highlightStyle.sendToBack) {
+                  this.bringToBack();
+                }
+              });
+            })();
+          }
+        })();
       }
     }).call(map);
   };
@@ -3019,7 +2978,7 @@ methods.addGeoJSON = function (data, layerId, group, style) {
         featureId: feature.id,
         properties: feature.properties
       };
-      var popup = feature.properties ? feature.properties.popup : null;
+      var popup = feature.properties.popup;
       if (typeof popup !== "undefined" && popup !== null) layer.bindPopup(popup);
       layer.on("click", mouseHandler(self.id, layerId, group, "geojson_click", extraInfo), this);
       layer.on("mouseover", mouseHandler(self.id, layerId, group, "geojson_mouseover", extraInfo), this);
@@ -3133,6 +3092,8 @@ methods.clearControls = function () {
 };
 
 methods.addLegend = function (options) {
+  var _this5 = this;
+
   var legend = _leaflet2.default.control({ position: options.position });
   var gradSpan = void 0;
 
@@ -3142,79 +3103,81 @@ methods.addLegend = function (options) {
         labels = options.labels,
         legendHTML = "";
     if (options.type === "numeric") {
-      // # Formatting constants.
-      var singleBinHeight = 20; // The distance between tick marks, in px
-      var vMargin = 8; // If 1st tick mark starts at top of gradient, how
-      // many extra px are needed for the top half of the
-      // 1st label? (ditto for last tick mark/label)
-      var tickWidth = 4; // How wide should tick marks be, in px?
-      var labelPadding = 6; // How much distance to reserve for tick mark?
-      // (Must be >= tickWidth)
+      (function () {
+        // # Formatting constants.
+        var singleBinHeight = 20; // The distance between tick marks, in px
+        var vMargin = 8; // If 1st tick mark starts at top of gradient, how
+        // many extra px are needed for the top half of the
+        // 1st label? (ditto for last tick mark/label)
+        var tickWidth = 4; // How wide should tick marks be, in px?
+        var labelPadding = 6; // How much distance to reserve for tick mark?
+        // (Must be >= tickWidth)
 
-      // # Derived formatting parameters.
+        // # Derived formatting parameters.
 
-      // What's the height of a single bin, in percentage (of gradient height)?
-      // It might not just be 1/(n-1), if the gradient extends past the tick
-      // marks (which can be the case for pretty cut points).
-      var singleBinPct = (options.extra.p_n - options.extra.p_1) / (labels.length - 1);
-      // Each bin is `singleBinHeight` high. How tall is the gradient?
-      var totalHeight = 1 / singleBinPct * singleBinHeight + 1;
-      // How far should the first tick be shifted down, relative to the top
-      // of the gradient?
-      var tickOffset = singleBinHeight / singleBinPct * options.extra.p_1;
+        // What's the height of a single bin, in percentage (of gradient height)?
+        // It might not just be 1/(n-1), if the gradient extends past the tick
+        // marks (which can be the case for pretty cut points).
+        var singleBinPct = (options.extra.p_n - options.extra.p_1) / (labels.length - 1);
+        // Each bin is `singleBinHeight` high. How tall is the gradient?
+        var totalHeight = 1 / singleBinPct * singleBinHeight + 1;
+        // How far should the first tick be shifted down, relative to the top
+        // of the gradient?
+        var tickOffset = singleBinHeight / singleBinPct * options.extra.p_1;
 
-      gradSpan = (0, _jquery2.default)("<span/>").css({
-        "background": "linear-gradient(" + colors + ")",
-        "opacity": options.opacity,
-        "height": totalHeight + "px",
-        "width": "18px",
-        "display": "block",
-        "margin-top": vMargin + "px"
-      });
-      var leftDiv = (0, _jquery2.default)("<div/>").css("float", "left"),
-          rightDiv = (0, _jquery2.default)("<div/>").css("float", "left");
-      leftDiv.append(gradSpan);
-      (0, _jquery2.default)(div).append(leftDiv).append(rightDiv).append((0, _jquery2.default)("<br>"));
+        gradSpan = (0, _jquery2.default)("<span/>").css({
+          "background": "linear-gradient(" + colors + ")",
+          "opacity": options.opacity,
+          "height": totalHeight + "px",
+          "width": "18px",
+          "display": "block",
+          "margin-top": vMargin + "px"
+        });
+        var leftDiv = (0, _jquery2.default)("<div/>").css("float", "left"),
+            rightDiv = (0, _jquery2.default)("<div/>").css("float", "left");
+        leftDiv.append(gradSpan);
+        (0, _jquery2.default)(div).append(leftDiv).append(rightDiv).append((0, _jquery2.default)("<br>"));
 
-      // Have to attach the div to the body at this early point, so that the
-      // svg text getComputedTextLength() actually works, below.
-      document.body.appendChild(div);
+        // Have to attach the div to the body at this early point, so that the
+        // svg text getComputedTextLength() actually works, below.
+        document.body.appendChild(div);
 
-      var ns = "http://www.w3.org/2000/svg";
-      var svg = document.createElementNS(ns, "svg");
-      rightDiv.append(svg);
-      var g = document.createElementNS(ns, "g");
-      (0, _jquery2.default)(g).attr("transform", "translate(0, " + vMargin + ")");
-      svg.appendChild(g);
+        var ns = "http://www.w3.org/2000/svg";
+        var svg = document.createElementNS(ns, "svg");
+        rightDiv.append(svg);
+        var g = document.createElementNS(ns, "g");
+        (0, _jquery2.default)(g).attr("transform", "translate(0, " + vMargin + ")");
+        svg.appendChild(g);
 
-      // max label width needed to set width of svg, and right-justify text
-      var maxLblWidth = 0;
+        // max label width needed to set width of svg, and right-justify text
+        var maxLblWidth = 0;
 
-      // Create tick marks and labels
-      _jquery2.default.each(labels, function (i, label) {
-        var y = tickOffset + i * singleBinHeight + 0.5;
+        // Create tick marks and labels
+        _jquery2.default.each(labels, function (i, label) {
+          var y = tickOffset + i * singleBinHeight + 0.5;
 
-        var thisLabel = document.createElementNS(ns, "text");
-        (0, _jquery2.default)(thisLabel).text(labels[i]).attr("y", y).attr("dx", labelPadding).attr("dy", "0.5ex");
-        g.appendChild(thisLabel);
-        maxLblWidth = Math.max(maxLblWidth, thisLabel.getComputedTextLength());
+          var thisLabel = document.createElementNS(ns, "text");
+          (0, _jquery2.default)(thisLabel).text(labels[i]).attr("y", y).attr("dx", labelPadding).attr("dy", "0.5ex");
+          g.appendChild(thisLabel);
+          maxLblWidth = Math.max(maxLblWidth, thisLabel.getComputedTextLength());
 
-        var thisTick = document.createElementNS(ns, "line");
-        (0, _jquery2.default)(thisTick).attr("x1", 0).attr("x2", tickWidth).attr("y1", y).attr("y2", y).attr("stroke-width", 1);
-        g.appendChild(thisTick);
-      });
+          var thisTick = document.createElementNS(ns, "line");
+          (0, _jquery2.default)(thisTick).attr("x1", 0).attr("x2", tickWidth).attr("y1", y).attr("y2", y).attr("stroke-width", 1);
+          g.appendChild(thisTick);
+        });
 
-      // Now that we know the max label width, we can right-justify
-      (0, _jquery2.default)(svg).find("text").attr("dx", labelPadding + maxLblWidth).attr("text-anchor", "end");
-      // Final size for <svg>
-      (0, _jquery2.default)(svg).css({
-        width: maxLblWidth + labelPadding + "px",
-        height: totalHeight + vMargin * 2 + "px"
-      });
+        // Now that we know the max label width, we can right-justify
+        (0, _jquery2.default)(svg).find("text").attr("dx", labelPadding + maxLblWidth).attr("text-anchor", "end");
+        // Final size for <svg>
+        (0, _jquery2.default)(svg).css({
+          width: maxLblWidth + labelPadding + "px",
+          height: totalHeight + vMargin * 2 + "px"
+        });
 
-      if (options.na_color && _jquery2.default.inArray(options.na_label, labels) < 0) {
-        (0, _jquery2.default)(div).append("<div><i style=\"" + "background:" + options.na_color + ";opacity:" + options.opacity + ";margin-right:" + labelPadding + "px" + ";\"></i>" + options.na_label + "</div>");
-      }
+        if (options.na_color && _jquery2.default.inArray(options.na_label, labels) < 0) {
+          (0, _jquery2.default)(div).append("<div><i style=\"" + "background:" + options.na_color + ";opacity:" + options.opacity + ";margin-right:" + labelPadding + "px" + ";\"></i>" + options.na_label + "</div>");
+        }
+      })();
     } else {
       if (options.na_color && _jquery2.default.inArray(options.na_label, labels) < 0) {
         colors.push(options.na_color);
@@ -3230,39 +3193,41 @@ methods.addLegend = function (options) {
   };
 
   if (options.group) {
-    // Auto generate a layerID if not provided
-    if (!options.layerId) {
-      options.layerId = _leaflet2.default.Util.stamp(legend);
-    }
+    (function () {
+      // Auto generate a layerID if not provided
+      if (!options.layerId) {
+        options.layerId = _leaflet2.default.Util.stamp(legend);
+      }
 
-    var map = this;
-    map.on("overlayadd", function (e) {
-      if (e.name === options.group) {
-        map.controls.add(legend, options.layerId);
-      }
-    });
-    map.on("overlayremove", function (e) {
-      if (e.name === options.group) {
-        map.controls.remove(options.layerId);
-      }
-    });
-    map.on("groupadd", function (e) {
-      if (e.name === options.group) {
-        map.controls.add(legend, options.layerId);
-      }
-    });
-    map.on("groupremove", function (e) {
-      if (e.name === options.group) {
-        map.controls.remove(options.layerId);
-      }
-    });
+      var map = _this5;
+      map.on("overlayadd", function (e) {
+        if (e.name === options.group) {
+          map.controls.add(legend, options.layerId);
+        }
+      });
+      map.on("overlayremove", function (e) {
+        if (e.name === options.group) {
+          map.controls.remove(options.layerId);
+        }
+      });
+      map.on("groupadd", function (e) {
+        if (e.name === options.group) {
+          map.controls.add(legend, options.layerId);
+        }
+      });
+      map.on("groupremove", function (e) {
+        if (e.name === options.group) {
+          map.controls.remove(options.layerId);
+        }
+      });
+    })();
   }
 
   this.controls.add(legend, options.layerId);
 };
 
 methods.addLayersControl = function (baseGroups, overlayGroups, options) {
-  var _this4 = this;
+  var _this6 = this;
 
   // Only allow one layers control at a time
   methods.removeLayersControl.call(this);
@@ -3270,23 +3235,23 @@ methods.addLayersControl = function (baseGroups, overlayGroups, options) {
   var firstLayer = true;
   var base = {};
   _jquery2.default.each((0, _util.asArray)(baseGroups), function (i, g) {
-    var layer = _this4.layerManager.getLayerGroup(g, true);
+    var layer = _this6.layerManager.getLayerGroup(g, true);
     if (layer) {
       base[g] = layer;
 
       // Check if >1 base layers are visible; if so, hide all but the first one
-      if (_this4.hasLayer(layer)) {
+      if (_this6.hasLayer(layer)) {
         if (firstLayer) {
           firstLayer = false;
         } else {
-          _this4.removeLayer(layer);
+          _this6.removeLayer(layer);
         }
       }
     }
   });
   var overlay = {};
   _jquery2.default.each((0, _util.asArray)(overlayGroups), function (i, g) {
-    var layer = _this4.layerManager.getLayerGroup(g, true);
+    var layer = _this6.layerManager.getLayerGroup(g, true);
     if (layer) {
       overlay[g] = layer;
     }
@@ -3320,23 +3285,23 @@ methods.removeScaleBar = function () {
 };
 
 methods.hideGroup = function (group) {
-  var _this5 = this;
+  var _this7 = this;
 
   _jquery2.default.each((0, _util.asArray)(group), function (i, g) {
-    var layer = _this5.layerManager.getLayerGroup(g, true);
+    var layer = _this7.layerManager.getLayerGroup(g, true);
     if (layer) {
-      _this5.removeLayer(layer);
+      _this7.removeLayer(layer);
     }
   });
 };
 
 methods.showGroup = function (group) {
-  var _this6 = this;
+  var _this8 = this;
 
   _jquery2.default.each((0, _util.asArray)(group), function (i, g) {
-    var layer = _this6.layerManager.getLayerGroup(g, true);
+    var layer = _this8.layerManager.getLayerGroup(g, true);
     if (layer) {
-      _this6.addLayer(layer);
+      _this8.addLayer(layer);
     }
   });
 };
@@ -3376,10 +3341,10 @@ function setupShowHideGroupsOnZoom(map) {
 }
 
 methods.setGroupOptions = function (group, options) {
-  var _this7 = this;
+  var _this9 = this;
 
   _jquery2.default.each((0, _util.asArray)(group), function (i, g) {
-    var layer = _this7.layerManager.getLayerGroup(g, true);
+    var layer = _this9.layerManager.getLayerGroup(g, true);
     // This slightly tortured check is because 0 is a valid value for zoomLevels
     if (typeof options.zoomLevels !== "undefined" && options.zoomLevels !== null) {
       layer.zoomLevels = (0, _util.asArray)(options.zoomLevels);
@@ -3531,123 +3496,131 @@ methods.addRasterImage = function (uri, bounds, opacity, attribution, layerId, g
 
     getImageData(function (imgData, w, h, mipmapper) {
       try {
-        // The Context2D we'll being drawing onto. It's always 256x256.
-        var ctx = canvas.getContext("2d");
+        var _ret8 = function () {
+          // The Context2D we'll being drawing onto. It's always 256x256.
+          var ctx = canvas.getContext("2d");
 
-        // Convert our image data's top-left and bottom-right locations into
-        // x/y tile coordinates. This is essentially doing a spherical mercator
-        // projection, then multiplying by 2^zoom.
-        var topLeft = degree2tile(bounds[0][0], bounds[0][1], zoom);
-        var bottomRight = degree2tile(bounds[1][0], bounds[1][1], zoom);
-        // The size of the image in x/y tile coordinates.
-        var extent = { x: bottomRight.x - topLeft.x, y: bottomRight.y - topLeft.y };
+          // Convert our image data's top-left and bottom-right locations into
+          // x/y tile coordinates. This is essentially doing a spherical mercator
+          // projection, then multiplying by 2^zoom.
+          var topLeft = degree2tile(bounds[0][0], bounds[0][1], zoom);
+          var bottomRight = degree2tile(bounds[1][0], bounds[1][1], zoom);
+          // The size of the image in x/y tile coordinates.
+          var extent = { x: bottomRight.x - topLeft.x, y: bottomRight.y - topLeft.y };
 
-        // Short circuit if tile is totally disjoint from image.
-        if (!overlap(tilePoint.x, tilePoint.x + 1, topLeft.x, bottomRight.x)) return;
-        if (!overlap(tilePoint.y, tilePoint.y + 1, topLeft.y, bottomRight.y)) return;
+          // Short circuit if tile is totally disjoint from image.
+          if (!overlap(tilePoint.x, tilePoint.x + 1, topLeft.x, bottomRight.x)) return {
+              v: void 0
+            };
+          if (!overlap(tilePoint.y, tilePoint.y + 1, topLeft.y, bottomRight.y)) return {
+              v: void 0
+            };
 
-        // The linear resolution of the tile we're drawing is always 256px per tile unit.
-        // If the linear resolution (in either direction) of the image is less than 256px
-        // per tile unit, then use nearest neighbor; otherwise, use the canvas's built-in
-        // scaling.
-        var imgRes = {
-          x: w / extent.x,
-          y: h / extent.y
-        };
-
-        // We can do the actual drawing in one of three ways:
-        // - Call drawImage(). This is easy and fast, and results in smooth
-        //   interpolation (bilinear?). This is what we want when we are
-        //   reducing the image from its native size.
-        // - Call drawImage() with imageSmoothingEnabled=false. This is easy
-        //   and fast and gives us nearest-neighbor interpolation, which is what
-        //   we want when enlarging the image. However, it's unsupported on many
-        //   browsers (including QtWebkit).
-        // - Do a manual nearest-neighbor interpolation. This is what we'll fall
-        //   back to when enlarging, and imageSmoothingEnabled isn't supported.
-        //   In theory it's slower, but still pretty fast on my machine, and the
-        //   results look the same AFAICT.
-
-        // Is imageSmoothingEnabled supported? If so, we can let canvas do
-        // nearest-neighbor interpolation for us.
-        var smoothingProperty = getCanvasSmoothingProperty(ctx);
-
-        if (smoothingProperty || imgRes.x >= 256 && imgRes.y >= 256) {
-          // Use built-in scaling
-
-          // Turn off anti-aliasing if necessary
-          if (smoothingProperty) {
-            ctx[smoothingProperty] = imgRes.x >= 256 && imgRes.y >= 256;
-          }
-
-          // Don't necessarily draw with the full-size image; if we're
-          // downscaling, use the mipmapper to get a pre-downscaled image
-          // (see comments on Mipmapper class for why this matters).
-          mipmapper.getBySize(extent.x * 256, extent.y * 256, function (mip) {
-            // It's possible that the image will go off the edge of the canvas--
-            // that's OK, the canvas should clip appropriately.
-            ctx.drawImage(mip,
-            // Convert abs tile coords to rel tile coords, then *256 to convert
-            // to rel pixel coords
-            (topLeft.x - tilePoint.x) * 256, (topLeft.y - tilePoint.y) * 256,
-            // Always draw the whole thing and let canvas clip; so we can just
-            // convert from size in tile coords straight to pixels
-            extent.x * 256, extent.y * 256);
-          });
-        } else {
-          // Use manual nearest-neighbor interpolation
-
-          // Calculate the source image pixel coordinates that correspond with
-          // the top-left and bottom-right of this tile. (If the source image
-          // only partially overlaps the tile, we use max/min to limit the
-          // sourceStart/End to only reflect the overlapping portion.)
-          var sourceStart = {
-            x: Math.max(0, Math.floor((tilePoint.x - topLeft.x) * imgRes.x)),
-            y: Math.max(0, Math.floor((tilePoint.y - topLeft.y) * imgRes.y))
-          };
-          var sourceEnd = {
-            x: Math.min(w, Math.ceil((tilePoint.x + 1 - topLeft.x) * imgRes.x)),
-            y: Math.min(h, Math.ceil((tilePoint.y + 1 - topLeft.y) * imgRes.y))
+          // The linear resolution of the tile we're drawing is always 256px per tile unit.
+          // If the linear resolution (in either direction) of the image is less than 256px
+          // per tile unit, then use nearest neighbor; otherwise, use the canvas's built-in
+          // scaling.
+          var imgRes = {
+            x: w / extent.x,
+            y: h / extent.y
           };
 
-          // The size, in dest pixels, that each source pixel should occupy.
-          // This might be greater or less than 1 (e.g. if x and y resolution
-          // are very different).
-          var pixelSize = {
-            x: 256 / imgRes.x,
-            y: 256 / imgRes.y
-          };
+          // We can do the actual drawing in one of three ways:
+          // - Call drawImage(). This is easy and fast, and results in smooth
+          //   interpolation (bilinear?). This is what we want when we are
+          //   reducing the image from its native size.
+          // - Call drawImage() with imageSmoothingEnabled=false. This is easy
+          //   and fast and gives us nearest-neighbor interpolation, which is what
+          //   we want when enlarging the image. However, it's unsupported on many
+          //   browsers (including QtWebkit).
+          // - Do a manual nearest-neighbor interpolation. This is what we'll fall
+          //   back to when enlarging, and imageSmoothingEnabled isn't supported.
+          //   In theory it's slower, but still pretty fast on my machine, and the
+          //   results look the same AFAICT.
 
-          // For each pixel in the source image that overlaps the tile...
-          for (var row = sourceStart.y; row < sourceEnd.y; row++) {
-            for (var col = sourceStart.x; col < sourceEnd.x; col++) {
-              // ...extract the pixel data...
-              var i = (row * w + col) * 4;
-              var r = imgData[i];
-              var g = imgData[i + 1];
-              var b = imgData[i + 2];
-              var a = imgData[i + 3];
-              ctx.fillStyle = "rgba(" + [r, g, b, a / 255].join(",") + ")";
+          // Is imageSmoothingEnabled supported? If so, we can let canvas do
+          // nearest-neighbor interpolation for us.
+          var smoothingProperty = getCanvasSmoothingProperty(ctx);
 
-              // ...calculate the corresponding pixel coord in the dest image
-              // where it should be drawn...
-              var pixelPos = {
-                x: (col / imgRes.x + topLeft.x - tilePoint.x) * 256,
-                y: (row / imgRes.y + topLeft.y - tilePoint.y) * 256
-              };
+          if (smoothingProperty || imgRes.x >= 256 && imgRes.y >= 256) {
+            // Use built-in scaling
 
-              // ...and draw a rectangle there.
-              ctx.fillRect(Math.round(pixelPos.x), Math.round(pixelPos.y),
-              // Looks crazy, but this is necessary to prevent rounding from
-              // causing overlap between this rect and its neighbors. The
-              // minuend is the location of the next pixel, while the
-              // subtrahend is the position of the current pixel (to turn an
-              // absolute coordinate to a width/height). Yes, I had to look
-              // up minuend and subtrahend.
-              Math.round(pixelPos.x + pixelSize.x) - Math.round(pixelPos.x), Math.round(pixelPos.y + pixelSize.y) - Math.round(pixelPos.y));
+            // Turn off anti-aliasing if necessary
+            if (smoothingProperty) {
+              ctx[smoothingProperty] = imgRes.x >= 256 && imgRes.y >= 256;
+            }
+
+            // Don't necessarily draw with the full-size image; if we're
+            // downscaling, use the mipmapper to get a pre-downscaled image
+            // (see comments on Mipmapper class for why this matters).
+            mipmapper.getBySize(extent.x * 256, extent.y * 256, function (mip) {
+              // It's possible that the image will go off the edge of the canvas--
+              // that's OK, the canvas should clip appropriately.
+              ctx.drawImage(mip,
+              // Convert abs tile coords to rel tile coords, then *256 to convert
+              // to rel pixel coords
+              (topLeft.x - tilePoint.x) * 256, (topLeft.y - tilePoint.y) * 256,
+              // Always draw the whole thing and let canvas clip; so we can just
+              // convert from size in tile coords straight to pixels
+              extent.x * 256, extent.y * 256);
+            });
+          } else {
+            // Use manual nearest-neighbor interpolation
+
+            // Calculate the source image pixel coordinates that correspond with
+            // the top-left and bottom-right of this tile. (If the source image
+            // only partially overlaps the tile, we use max/min to limit the
+            // sourceStart/End to only reflect the overlapping portion.)
+            var sourceStart = {
+              x: Math.max(0, Math.floor((tilePoint.x - topLeft.x) * imgRes.x)),
+              y: Math.max(0, Math.floor((tilePoint.y - topLeft.y) * imgRes.y))
+            };
+            var sourceEnd = {
+              x: Math.min(w, Math.ceil((tilePoint.x + 1 - topLeft.x) * imgRes.x)),
+              y: Math.min(h, Math.ceil((tilePoint.y + 1 - topLeft.y) * imgRes.y))
+            };
+
+            // The size, in dest pixels, that each source pixel should occupy.
+            // This might be greater or less than 1 (e.g. if x and y resolution
+            // are very different).
+            var pixelSize = {
+              x: 256 / imgRes.x,
+              y: 256 / imgRes.y
+            };
+
+            // For each pixel in the source image that overlaps the tile...
+            for (var row = sourceStart.y; row < sourceEnd.y; row++) {
+              for (var col = sourceStart.x; col < sourceEnd.x; col++) {
+                // ...extract the pixel data...
+                var i = (row * w + col) * 4;
+                var r = imgData[i];
+                var g = imgData[i + 1];
+                var b = imgData[i + 2];
+                var a = imgData[i + 3];
+                ctx.fillStyle = "rgba(" + [r, g, b, a / 255].join(",") + ")";
+
+                // ...calculate the corresponding pixel coord in the dest image
+                // where it should be drawn...
+                var pixelPos = {
+                  x: (col / imgRes.x + topLeft.x - tilePoint.x) * 256,
+                  y: (row / imgRes.y + topLeft.y - tilePoint.y) * 256
+                };
+
+                // ...and draw a rectangle there.
+                ctx.fillRect(Math.round(pixelPos.x), Math.round(pixelPos.y),
+                // Looks crazy, but this is necessary to prevent rounding from
+                // causing overlap between this rect and its neighbors. The
+                // minuend is the location of the next pixel, while the
+                // subtrahend is the position of the current pixel (to turn an
+                // absolute coordinate to a width/height). Yes, I had to look
+                // up minuend and subtrahend.
+                Math.round(pixelPos.x + pixelSize.x) - Math.round(pixelPos.x), Math.round(pixelPos.y + pixelSize.y) - Math.round(pixelPos.y));
+              }
             }
           }
-        }
+        }();
+
+        if ((typeof _ret8 === "undefined" ? "undefined" : _typeof(_ret8)) === "object") return _ret8.v;
       } catch (e) {
         error = e;
       } finally {
@@ -3684,7 +3657,7 @@ methods.removeMeasure = function () {
 };
 
 methods.addSelect = function (ctGroup) {
-  var _this8 = this;
+  var _this10 = this;
 
   methods.removeSelect.call(this);
 
@@ -3695,30 +3668,32 @@ methods.addSelect = function (ctGroup) {
       title: "Make a selection",
       onClick: function onClick(btn, map) {
         btn.state("select-active");
-        _this8._locationFilter = new _leaflet2.default.LocationFilter2();
+        _this10._locationFilter = new _leaflet2.default.LocationFilter2();
 
         if (ctGroup) {
-          var selectionHandle = new global.crosstalk.SelectionHandle(ctGroup);
-          selectionHandle.on("change", function (e) {
-            if (e.sender !== selectionHandle) {
-              if (_this8._locationFilter) {
-                _this8._locationFilter.disable();
-                btn.state("select-inactive");
+          (function () {
+            var selectionHandle = new global.crosstalk.SelectionHandle(ctGroup);
+            selectionHandle.on("change", function (e) {
+              if (e.sender !== selectionHandle) {
+                if (_this10._locationFilter) {
+                  _this10._locationFilter.disable();
+                  btn.state("select-inactive");
+                }
               }
-            }
-          });
-          var handler = function handler(e) {
-            _this8.layerManager.brush(_this8._locationFilter.getBounds(), { sender: selectionHandle });
-          };
-          _this8._locationFilter.on("enabled", handler);
-          _this8._locationFilter.on("change", handler);
-          _this8._locationFilter.on("disabled", function () {
-            selectionHandle.close();
-            _this8._locationFilter = null;
-          });
+            });
+            var handler = function handler(e) {
+              _this10.layerManager.brush(_this10._locationFilter.getBounds(), { sender: selectionHandle });
+            };
+            _this10._locationFilter.on("enabled", handler);
+            _this10._locationFilter.on("change", handler);
+            _this10._locationFilter.on("disabled", function () {
+              selectionHandle.close();
+              _this10._locationFilter = null;
+            });
+          })();
         }
 
-        _this8._locationFilter.addTo(map);
+        _this10._locationFilter.addTo(map);
       }
     }, {
       stateName: "select-active",
@@ -3726,9 +3701,9 @@ methods.addSelect = function (ctGroup) {
       title: "Dismiss selection",
       onClick: function onClick(btn, map) {
         btn.state("select-inactive");
-        _this8._locationFilter.disable();
+        _this10._locationFilter.disable();
         // If explicitly dismissed, clear the crosstalk selections
-        _this8.layerManager.unbrush();
+        _this10.layerManager.unbrush();
       }
     }]
   });
@@ -3770,6 +3745,7 @@ function _classCallCheck(instance, Constructor) { if (!(instance instanceof Cons
 // pixel of the original image has some contribution to the downscaled image)
 // as opposed to a single-step downscaling which will discard a lot of data
 // (and with sparse images at small scales can give very surprising results).
+
 var Mipmapper = function () {
   function Mipmapper(img) {
     _classCallCheck(this, Mipmapper);
@@ -3911,15 +3887,14 @@ function asArray(value) {
 //# sourceMappingURL=lfx-gps-prod.js.map</script>
 <script>!function(t){var o={};function n(e){if(o[e])return o[e].exports;var i=o[e]={i:e,l:!1,exports:{}};return t[e].call(i.exports,i,i.exports,n),i.l=!0,i.exports}n.m=t,n.c=o,n.d=function(t,o,e){n.o(t,o)||Object.defineProperty(t,o,{configurable:!1,enumerable:!0,get:e})},n.r=function(t){Object.defineProperty(t,"__esModule",{value:!0})},n.n=function(t){var o=t&&t.__esModule?function(){return t.default}:function(){return t};return n.d(o,"a",o),o},n.o=function(t,o){return Object.prototype.hasOwnProperty.call(t,o)},n.p="",n(n.s=0)}([function(t,o){LeafletWidget.methods.addControlGPS=function(t){(function(){var o=this;o.gpscontrol&&(o.gpscontrol.removeFrom(o),delete o.gpscontrol),o.gpscontrol=new L.Control.Gps(t),o.gpscontrol.on("gps:located",function(t){HTMLWidgets.shinyMode&&Shiny.onInputChange(o.id+"_gps_located",{coordinates:t.latlng,radius:t.marker._radius})}),o.gpscontrol.on("gps:disabled",function(t){HTMLWidgets.shinyMode&&Shiny.onInputChange(o.id+"_gps_disabled",{})}),o.gpscontrol.addTo(o)}).call(this)},LeafletWidget.methods.removeControlGPS=function(){(function(){this.gpscontrol&&(this.gpscontrol.removeFrom(this),delete this.gpscontrol)}).call(this)},LeafletWidget.methods.activateGPS=function(){(function(){this.gpscontrol&&this.gpscontrol.activate()}).call(this)},LeafletWidget.methods.deactivateGPS=function(){(function(){this.gpscontrol&&this.gpscontrol.deactivate()}).call(this)},LeafletWidget.methods.getLocation=function(){return function(){if(this.gpscontrol)return this.gpscontrol.getLocation();throw"GPS Control not added to the map"}.call(this)}}]);
 //# sourceMappingURL=lfx-gps-bindings.js.map</script>
-
 </head>
 <body style="background-color: white;">
 <div id="htmlwidget_container">
-<div id="htmlwidget-e83603080da90c725adf" class="leaflet html-widget" style="width:100%;height:400px;">
+<div id="htmlwidget-de0d555ebcf127fb0777" class="leaflet html-widget" style="width:100%;height:400px;">
 
 </div>
 </div>
-<script type="application/json" data-for="htmlwidget-e83603080da90c725adf">{"x":{"options":{"crs":{"crsClass":"L.CRS.EPSG3857","code":null,"proj4def":null,"projectedBounds":null,"options":{}}},"calls":[{"method":"addTiles","args":["//{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",null,null,{"minZoom":0,"maxZoom":18,"tileSize":256,"subdomains":"abc","errorTileUrl":"","tms":false,"noWrap":false,"zoomOffset":0,"zoomReverse":false,"opacity":1,"zIndex":1,"detectRetina":false,"attribution":"&copy; <a href=\"http://openstreetmap.org\">OpenStreetMap<\/a> contributors, <a href=\"http://creativecommons.org/licenses/by-sa/2.0/\">CC-BY-SA<\/a>"}]},{"method":"addCircleMarkers","args":[[52.39805,52.36152,52.41803,52.35893,52.30786,52.44923,52.34779,52.31626,52.43344,52.4224,52.45802,52.31439,52.40395,52.46089,52.4067,52.38325,52.41187,52.42474,52.47,52.40485,52.44214,52.3331,52.42442,52.47038,52.37739,52.37921,52.40993,52.3444,52.32107,52.32131,52.39947,52.4547,52.42972,52.36397,52.41522,52.41961,52.41912,52.47244,52.23297,52.43094,52.48836,52.40816,52.38678,52.3932,52.47825,52.49774,52.43807,52.49965,52.30345,52.34883,52.35779,52.38513,52.394,52.3942,52.49139,52.54747,52.47148,52.36058,52.49137,52.4786,52.45788,52.39503,52.42385,52.43609,52.27687,52.38056,52.38157,52.40118,52.39458,52.39377,52.39577,52.38816,52.3838,52.31035,52.39148,52.39143,52.38374,52.38376,52.41228,52.43375,52.35432,52.35004,52.41261,52.4138,52.31217,52.31765,52.35961,52.37736,52.35944,52.36995,52.31849,52.39578,52.29557,52.38767,52.3839,52.26384,52.31805,52.25353,52.37463,52.44389,52.45244,52.46661,52.4751,52.49308,52.45223,52.44718,52.44408,52.45266,52.45377,52.45902,52.43953,52.454146,52.392083,52.46875,52.3948667285188,52.3953952123537,52.4006001921829,52.4321093631137,52.4530528440211,52.40748,52.25886,52.39929,52.39299,52.3667,52.27269,52.25533,52.39168,52.2681,52.3859833333333,52.3994,52.39855,52.4071833333333,52.4065,52.48295,52.378497,52.454545,52.442555,52.42523,52.348043,52.330247,52.415278,52.423233,52.362797,52.400158,52.399003,52.397591,52.391868,52.397397,52.387382,52.390153,52.461114,52.3993999714743,52.3906312076997,52.3929976038969,52.3769748488525,52.3751481334762,52.397922,52.397303,52.400953,52.401974,52.3501267,52.345678,52.3502583,52.364997,52.436228,52.4345917,52.4489733,52.4407383,52.4386717,52.44881,52.446785,52.44152,52.4303133,52.3374437904564,52.4248022313357,52.446447354098,52.345539,52.301354,52.269654,52.347282,52.4540944,52.437615,52.4228317,52.3907194,52.3304701,52.3282204,52.395675,52.40396,52.4037548145376,52.390455,52.3718217,52.370429,52.329045,52.376516,52.373939,52.3974,52.398789,52.396891,52.397315,52.3935401,52.345578,52.342542,52.350487,52.425228,52.3883524,52.3871474,52.3863788,52.39734,52.41478,52.41498,52.339187,52.323327,52.279633,52.269024,52.266966,52.271033,52.26496,52.283453,52.32033,52.34301,52.31478,52.356925,52.293868,52.26798,52.283433,52.269648,52.352528,52.265741,52.365524,52.4218,52.40368,52.3991,52.4197,52.386431,52.3074401970356,52.3074401970356,52.3748097492144,52.4269303152081,52.421827,52.42224,52.42221,52.42716,52.426053,52.396321,52.393729,52.380434,52.426312,52.439129,52.439567,52.439646,52.438377,52.438104,52.446512,52.449709,52.449808,52.451483,52.451559,52.449037,52.399613,52.404745,52.400305,52.42098,52.400652,52.39856,52.398005,52.406568,52.420877,52.421017,52.421139,52.457061,52.458829,52.395652,52.393829,52.294748,52.412696,52.418081,52.394439,52.394387,52.394307,52.391101,52.421031,52.416025,52.415383,52.415212,52.41338,52.403474,52.415816,52.397234,52.401667,52.407359,52.391624,52.407721,52.385936,52.39712,52.365331,52.34951017,52.432888,52.424675,52.411427,52.421103,52.422333,52.450257,52.46076,52.445476,52.423311,52.455053,52.465894,52.462992,52.430957,52.426008,52.435767,52.359433,52.373414,52.455833,52.3882167,52.3912183,52.5237011247065,52.5057323816387,52.5040178819488,52.4899667260525,52.4937794234365,52.4789727615632,52.472277333485,52.4718084923742,52.4684171259658,52.463479270671,52.4127778,52.4136111,52.4094444,52.415,52.39602,52.36669,52.427103,52.418706,52.42351,52.3796,52.374167,52.382592,52.3825,52.3536,52.389678,52.389483,52.35855,52.422064,52.37365,52.443056,52.444444,52.3869444,52.416006,52.4160472,52.397549,52.374592,52.475807,52.38835,52.3876361,52.308439,52.464205,52.309052,52.342578,52.289171,52.34637,52.312533,52.402563,52.402564,52.402528,52.402575,52.402728,52.404056,52.4244350476655,52.403386,52.402662,52.407648,52.410523,52.41361,52.415343,52.427762,52.434215,52.436592,52.443527,52.447541,52.448111,52.448241,52.449174,52.44961,52.450956,52.459514,52.45921,52.466315,52.464342,52.461241,52.451938,52.449629,52.44309,52.439591,52.432462,52.426153,52.422169,52.420603,52.413629,52.410357,52.457122,52.458793,52.454306,52.449205,52.446866,52.451437,52.432859,52.433992,52.423828,52.438309,52.433754,52.428863,52.420574,52.420711,52.421052,52.415932,52.405393,52.359972,52.36983801681,52.3699699070725,52.266389,52.339569,52.266847,52.392407,52.390467,52.389804,52.384476,52.373638,52.361259,52.358949,52.358189,52.355262,52.35309,52.348339,52.346369,52.343479,52.341717,52.347355,52.349316,52.350961,52.362279,52.364763,52.365909,52.374272,52.385833,52.387069,52.386636,52.384779,52.384744,52.386068,52.389869],[13.0487,13.06624,12.93506,12.96368,12.94893,13.03841,13.03597,12.98364,12.8998,12.88177,12.96182,13.10879,12.87197,12.87773,12.96244,13.00858,13.00569,13.09571,12.84595,13.08931,13.08679,13.14078,13.11699,12.86706,12.94185,13.06392,13.00995,12.94714,12.74255,13.08392,13.18133,13.04407,13.06172,13.07296,13.01291,13.0019,12.71951,12.715,12.97714,12.90781,12.93044,12.86714,12.9532,12.93882,13.1967,13.2411,13.17959,13.24504,12.96426,13.00017,12.99582,13.00095,12.98212,13.01119,12.98018,12.94608,12.87673,13.06534,12.87172,12.76567,12.96334,13.07058,12.99948,13.02025,13.00882,13.02979,13.11678,13.10211,13.12707,13.09573,13.12925,13.11059,13.06741,12.92898,12.98338,12.98573,12.9972,12.99724,13.00659,12.93888,12.92211,13.0141,12.82026,12.76854,12.90618,12.83504,12.96727,12.94315,13.02347,12.98515,13.0137,13.20826,12.86,12.9647,13.05788,12.80251,12.92494,12.83592,13.10657,13.02466,13.03299,13.03947,13.03673,13.02024,13.06148,13.05408,12.99954,12.99017,12.99984,13.00362,13.01363,12.964402,12.930485,12.94357,13.0322210644302,13.0655514303225,13.0774222812853,12.9023414044302,12.9002687666892,13.17482,12.92826,13.18584,13.20059,12.88562,12.92682,12.93116,13.18294,12.93781,13.0372555555556,13.1679833333333,13.1351,13.1108,13.1560833333333,13.2181333333333,12.940136,12.805735,12.790862,12.93853,13.071136,13.08715,12.990367,12.979943,13.189989,13.226384,13.219493,13.216944,13.111214,13.097702,13.102589,13.104103,13.06033,12.9745426941132,12.9550591042995,12.9607539388517,12.9795053702634,12.9850358097128,13.215539,13.197439,13.152866,13.131495,12.9139317,12.936975,12.949325,12.955965,13.00785,12.9846917,12.97019,12.957815,12.9433067,12.89066,12.894305,12.8945367,12.9058567,12.9314956022902,12.96788555411,12.9643434167786,12.942131,12.910202,12.940993,12.985947,12.8707985,13.0441983,13.0623933,12.9018786,12.7924456,12.780757,13.044135,13.052046,13.0755199223457,13.0158017,13.0139083,13.015858,12.978447,13.102692,13.105347,13.21625,13.220036,13.061036,13.05679,13.1070522,12.942184,12.936356,12.914985,12.938539,13.0227634,13.0210965,13.0221297,13.07083,13.08085,13.0799,12.982605,12.991149,12.962976,13.003558,13.037826,13.059213,13.058397,13.061977,13.128954,13.151997,12.987518,12.983725,12.958147,12.961001,12.961087,12.976097,13.147388,13.023947,13.140366,12.8869,12.87181,12.8841,12.885,13.065308,12.949522101029,12.949522101029,12.8535964523931,13.0961059998342,13.061022,13.063351,13.06349,13.064804,13.069028,13.077533,13.080655,13.096575,13.054207,13.015924,13.013546,13.013301,13.010278,13.009558,12.989107,12.988907,12.988908,12.977149,12.963827,12.962248,13.048179,12.96098,13.010669,13.054063,13.048525,13.048177,13.060226,13.058169,13.062414,13.062647,13.056444,13.059358,13.055165,13.049426,13.060732,12.859448,13.036736,13.039535,13.095523,13.095544,13.095404,13.088547,13.077542,13.081068,13.083764,13.083853,13.09563,13.049998,13.05004,13.058869,13.058051,13.06508,12.996982,12.96158,13.065707,13.06977,13.012237,12.74260328,13.09499,13.096231,13.098752,13.013309,13.006316,13.031588,13.072968,13.040038,13.004364,13.107754,13.107808,13.079404,13.06235,13.068867,13.054942,12.962317,13.082719,12.895833,12.96477,12.949145,13.0798091780099,13.0883361047772,13.0149422461374,13.0541785170793,13.0767994654805,13.0887822216895,12.8915890250185,12.8979105247431,12.8929493422177,12.8854788089836,13.0911111,13.0908333,13.0627778,13.0697222,13.05302,13.08523,13.159053,13.153083,13.03671,13.01901,13.114167,13.122672,13.1225,13.017575,13.036822,13.037853,12.965583,13.177578,12.976447,13.201389,13.202222,13.04,13.069056,13.069125,13.046491,13.119906,12.988483,13.062342,13.0605944,13.027176,13.009411,13.027573,12.936433,12.98952,12.985566,12.97307,13.257832,13.258798,13.261868,13.261893,13.263891,13.217478,13.0947871506214,13.125088,13.052694,13.053339,13.057114,13.056181,13.05745,13.051688,13.05053,13.051354,13.045872,13.040813,13.038281,13.038017,13.03831,13.035999,13.032039,13.023299,13.016537,13.012061,13.009535,13.006867,12.980014,12.988926,12.999326,13.013498,13.024194,13.025056,13.024973,13.035471,13.031012,13.033596,13.04839,13.055102,13.000182,13.00232,13.00103,12.98428,12.986079,12.988148,12.99937,13.027471,13.041548,13.041486,13.020756,13.032155,13.032732,13.031351,13.040484,12.96458,12.9321905005259,12.933275533573,12.92166,12.867647,12.921778,13.04214,13.041427,13.035134,13.027635,13.014928,13.001915,12.99679,12.99316,12.98173,12.980137,12.983527,12.981468,12.980551,12.980325,12.988881,13.004328,13.013999,13.021992,13.026196,13.029564,13.037387,13.040699,13.040057,13.042941,13.044774,13.049194,13.057024,13.058364],10,null,null,{"interactive":true,"className":"","stroke":true,"color":["#BADEF4","#668AAC","#517499","#517499","#668AAC","#668AAC","#517499","#668AAC","#517499","#668AAC","#668AAC","#7A9EBD","#517499","#7A9EBD","#517499","#668AAC","#668AAC","#517499","#517499","#517499","#517499","#668AAC","#517499","#7A9EBD","#668AAC","#517499","#517499","#7A9EBD","#3D6088","#3D6088","#3D6088","#3D6088","#668AAC","#517499","#3D6088","#517499","#3D6088","#668AAC","#517499","#517499","#668AAC","#668AAC","#517499","#517499","#517499","#517499","#517499","#7A9EBD","#7A9EBD","#3D6088","#90B4D0","#668AAC","#517499","#668AAC","#517499","#517499","#668AAC","#517499","#3D6088","#517499","#517499","#668AAC","#517499","#668AAC","#3D6088","#668AAC","#517499","#517499","#517499","#517499","#517499","#668AAC","#517499","#3D6088","#3D6088","#517499","#3D6088","#517499","#668AAC","#668AAC","#3D6088","#3D6088","#668AAC","#668AAC","#668AAC","#3D6088","#517499","#517499","#517499","#517499","#668AAC","#668AAC","#668AAC","#668AAC","#7A9EBD","#668AAC","#517499","#517499","#668AAC","#517499","#517499","#517499","#668AAC","#668AAC","#668AAC","#668AAC","#3D6088","#517499","#517499","#517499","#517499","#668AAC","#668AAC","#668AAC","#668AAC","#7A9EBD","#7A9EBD","#3D6088","#517499","#517499","#517499","#3D6088","#517499","#517499","#517499","#668AAC","#668AAC","#668AAC","#7A9EBD","#7A9EBD","#3D6088","#517499","#3D6088","#517499","#3D6088","#3D6088","#668AAC","#517499","#3D6088","#668AAC","#668AAC","#668AAC","#517499","#517499","#517499","#517499","#668AAC","#517499","#668AAC","#668AAC","#517499","#517499","#668AAC","#517499","#668AAC","#7A9EBD","#668AAC","#517499","#668AAC","#668AAC","#7A9EBD","#90B4D0","#90B4D0","#668AAC","#517499","#517499","#668AAC","#517499","#3D6088","#668AAC","#668AAC","#668AAC","#517499","#7A9EBD","#7A9EBD","#7A9EBD","#7A9EBD","#668AAC","#668AAC","#7A9EBD","#668AAC","#7A9EBD","#668AAC","#668AAC","#517499","#668AAC","#3D6088","#668AAC","#668AAC","#668AAC","#668AAC","#517499","#668AAC","#517499","#517499","#517499","#517499","#7A9EBD","#668AAC","#517499","#517499","#517499","#517499","#668AAC","#517499","#517499","#668AAC","#517499","#517499","#517499","#517499","#668AAC","#7A9EBD","#517499","#517499","#668AAC","#7A9EBD","#7A9EBD","#668AAC","#3D6088","#7A9EBD","#7A9EBD","#7A9EBD","#517499","#517499","#668AAC","#668AAC","#668AAC","#517499","#3D6088","#3D6088","#668AAC","#668AAC","#668AAC","#3D6088","#517499","#3D6088","#3D6088","#517499","#517499","#517499","#668AAC","#3D6088","#668AAC","#3D6088","#517499","#517499","#517499","#3D6088","#517499","#668AAC","#90B4D0","#3D6088","#517499","#668AAC","#517499","#517499","#517499","#517499","#517499","#7A9EBD","#7A9EBD","#668AAC","#517499","#7A9EBD","#517499","#668AAC","#517499","#517499","#517499","#668AAC","#517499","#517499","#517499","#668AAC","#7A9EBD","#517499","#668AAC","#517499","#517499","#668AAC","#668AAC","#668AAC","#668AAC","#668AAC","#668AAC","#668AAC","#668AAC","#668AAC","#517499","#517499","#668AAC","#517499","#668AAC","#668AAC","#7A9EBD","#7A9EBD","#517499","#517499","#517499","#517499","#3D6088","#3D6088","#3D6088","#517499","#517499","#517499","#3D6088","#3D6088","#668AAC","#668AAC","#668AAC","#517499","#668AAC","#668AAC","#668AAC","#517499","#517499","#517499","#517499","#668AAC","#517499","#668AAC","#668AAC","#668AAC","#668AAC","#7A9EBD","#668AAC","#517499","#517499","#3D6088","#668AAC","#3D6088","#3D6088","#517499","#517499","#668AAC","#668AAC","#668AAC","#3D6088","#517499","#517499","#3D6088","#517499","#668AAC","#668AAC","#7A9EBD","#517499","#3D6088","#517499","#668AAC","#517499","#517499","#668AAC","#668AAC","#3D6088","#3D6088","#3D6088","#517499","#3D6088","#517499","#517499","#668AAC","#668AAC","#668AAC","#668AAC","#517499","#517499","#668AAC","#668AAC","#3D6088","#3D6088","#3D6088","#3D6088","#517499","#3D6088","#517499","#3D6088","#517499","#668AAC","#7A9EBD","#7A9EBD","#668AAC","#7A9EBD","#3D6088","#517499","#668AAC","#3D6088","#3D6088","#3D6088","#3D6088","#517499","#517499","#3D6088","#3D6088","#3D6088","#3D6088","#517499","#3D6088","#517499","#3D6088","#517499","#3D6088","#3D6088","#517499","#90B4D0","#3D6088","#90B4D0","#517499","#3D6088","#3D6088","#3D6088","#668AAC","#3D6088","#3D6088","#3D6088","#3D6088","#3D6088","#90B4D0","#3D6088","#668AAC","#668AAC","#668AAC","#3D6088","#3D6088","#3D6088","#517499","#3D6088","#7A9EBD","#3D6088","#3D6088","#7A9EBD","#3D6088","#3D6088","#3D6088","#517499","#3D6088","#3D6088","#517499","#668AAC","#3D6088","#3D6088","#3D6088","#3D6088","#668AAC","#668AAC","#3D6088","#3D6088","#517499","#3D6088","#3D6088"],"weight":5,"opacity":0.5,"fill":true,"fillColor":["#BADEF4","#668AAC","#517499","#517499","#668AAC","#668AAC","#517499","#668AAC","#517499","#668AAC","#668AAC","#7A9EBD","#517499","#7A9EBD","#517499","#668AAC","#668AAC","#517499","#517499","#517499","#517499","#668AAC","#517499","#7A9EBD","#668AAC","#517499","#517499","#7A9EBD","#3D6088","#3D6088","#3D6088","#3D6088","#668AAC","#517499","#3D6088","#517499","#3D6088","#668AAC","#517499","#517499","#668AAC","#668AAC","#517499","#517499","#517499","#517499","#517499","#7A9EBD","#7A9EBD","#3D6088","#90B4D0","#668AAC","#517499","#668AAC","#517499","#517499","#668AAC","#517499","#3D6088","#517499","#517499","#668AAC","#517499","#668AAC","#3D6088","#668AAC","#517499","#517499","#517499","#517499","#517499","#668AAC","#517499","#3D6088","#3D6088","#517499","#3D6088","#517499","#668AAC","#668AAC","#3D6088","#3D6088","#668AAC","#668AAC","#668AAC","#3D6088","#517499","#517499","#517499","#517499","#668AAC","#668AAC","#668AAC","#668AAC","#7A9EBD","#668AAC","#517499","#517499","#668AAC","#517499","#517499","#517499","#668AAC","#668AAC","#668AAC","#668AAC","#3D6088","#517499","#517499","#517499","#517499","#668AAC","#668AAC","#668AAC","#668AAC","#7A9EBD","#7A9EBD","#3D6088","#517499","#517499","#517499","#3D6088","#517499","#517499","#517499","#668AAC","#668AAC","#668AAC","#7A9EBD","#7A9EBD","#3D6088","#517499","#3D6088","#517499","#3D6088","#3D6088","#668AAC","#517499","#3D6088","#668AAC","#668AAC","#668AAC","#517499","#517499","#517499","#517499","#668AAC","#517499","#668AAC","#668AAC","#517499","#517499","#668AAC","#517499","#668AAC","#7A9EBD","#668AAC","#517499","#668AAC","#668AAC","#7A9EBD","#90B4D0","#90B4D0","#668AAC","#517499","#517499","#668AAC","#517499","#3D6088","#668AAC","#668AAC","#668AAC","#517499","#7A9EBD","#7A9EBD","#7A9EBD","#7A9EBD","#668AAC","#668AAC","#7A9EBD","#668AAC","#7A9EBD","#668AAC","#668AAC","#517499","#668AAC","#3D6088","#668AAC","#668AAC","#668AAC","#668AAC","#517499","#668AAC","#517499","#517499","#517499","#517499","#7A9EBD","#668AAC","#517499","#517499","#517499","#517499","#668AAC","#517499","#517499","#668AAC","#517499","#517499","#517499","#517499","#668AAC","#7A9EBD","#517499","#517499","#668AAC","#7A9EBD","#7A9EBD","#668AAC","#3D6088","#7A9EBD","#7A9EBD","#7A9EBD","#517499","#517499","#668AAC","#668AAC","#668AAC","#517499","#3D6088","#3D6088","#668AAC","#668AAC","#668AAC","#3D6088","#517499","#3D6088","#3D6088","#517499","#517499","#517499","#668AAC","#3D6088","#668AAC","#3D6088","#517499","#517499","#517499","#3D6088","#517499","#668AAC","#90B4D0","#3D6088","#517499","#668AAC","#517499","#517499","#517499","#517499","#517499","#7A9EBD","#7A9EBD","#668AAC","#517499","#7A9EBD","#517499","#668AAC","#517499","#517499","#517499","#668AAC","#517499","#517499","#517499","#668AAC","#7A9EBD","#517499","#668AAC","#517499","#517499","#668AAC","#668AAC","#668AAC","#668AAC","#668AAC","#668AAC","#668AAC","#668AAC","#668AAC","#517499","#517499","#668AAC","#517499","#668AAC","#668AAC","#7A9EBD","#7A9EBD","#517499","#517499","#517499","#517499","#3D6088","#3D6088","#3D6088","#517499","#517499","#517499","#3D6088","#3D6088","#668AAC","#668AAC","#668AAC","#517499","#668AAC","#668AAC","#668AAC","#517499","#517499","#517499","#517499","#668AAC","#517499","#668AAC","#668AAC","#668AAC","#668AAC","#7A9EBD","#668AAC","#517499","#517499","#3D6088","#668AAC","#3D6088","#3D6088","#517499","#517499","#668AAC","#668AAC","#668AAC","#3D6088","#517499","#517499","#3D6088","#517499","#668AAC","#668AAC","#7A9EBD","#517499","#3D6088","#517499","#668AAC","#517499","#517499","#668AAC","#668AAC","#3D6088","#3D6088","#3D6088","#517499","#3D6088","#517499","#517499","#668AAC","#668AAC","#668AAC","#668AAC","#517499","#517499","#668AAC","#668AAC","#3D6088","#3D6088","#3D6088","#3D6088","#517499","#3D6088","#517499","#3D6088","#517499","#668AAC","#7A9EBD","#7A9EBD","#668AAC","#7A9EBD","#3D6088","#517499","#668AAC","#3D6088","#3D6088","#3D6088","#3D6088","#517499","#517499","#3D6088","#3D6088","#3D6088","#3D6088","#517499","#3D6088","#517499","#3D6088","#517499","#3D6088","#3D6088","#517499","#90B4D0","#3D6088","#90B4D0","#517499","#3D6088","#3D6088","#3D6088","#668AAC","#3D6088","#3D6088","#3D6088","#3D6088","#3D6088","#90B4D0","#3D6088","#668AAC","#668AAC","#668AAC","#3D6088","#3D6088","#3D6088","#517499","#3D6088","#7A9EBD","#3D6088","#3D6088","#7A9EBD","#3D6088","#3D6088","#3D6088","#517499","#3D6088","#3D6088","#517499","#668AAC","#3D6088","#3D6088","#3D6088","#3D6088","#668AAC","#668AAC","#3D6088","#3D6088","#517499","#3D6088","#3D6088"],"fillOpacity":0.2},null,null,["Titel :  Pizza Belag<br>Lat :  52.39805<br>Lon :  13.04870<br>Erreichen :  1<br>Finden :  1<br>Zeile :    1","Titel :  Turm<br>Lat :  52.36152<br>Lon :  13.06624<br>Erreichen :  3<br>Finden :  3<br>Zeile :    2","Titel :  Brücke<br>Lat :  52.41803<br>Lon :  12.93506<br>Erreichen :  3<br>Finden :  2<br>Zeile :    3","Titel :  Steinlöwen<br>Lat :  52.35893<br>Lon :  12.96368<br>Erreichen :  4<br>Finden :  2<br>Zeile :    4","Titel :  Turm<br>Lat :  52.30786<br>Lon :  12.94893<br>Erreichen :  5<br>Finden :  3<br>Zeile :    5","Titel :  Pumpstation<br>Lat :  52.44923<br>Lon :  13.03841<br>Erreichen :  2<br>Finden :  3<br>Zeile :    6","Titel :  Saugartenteich<br>Lat :  52.34779<br>Lon :  13.03597<br>Erreichen :  4<br>Finden :  2<br>Zeile :    7","Titel :  Badestelle<br>Lat :  52.31626<br>Lon :  12.98364<br>Erreichen :  5<br>Finden :  3<br>Zeile :    8","Titel :  Aussichtspunkt<br>Lat :  52.43344<br>Lon :  12.89980<br>Erreichen :  4<br>Finden :  2<br>Zeile :    9","Titel :  Sendeanlage<br>Lat :  52.42240<br>Lon :  12.88177<br>Erreichen :  4<br>Finden :  3<br>Zeile :   10","Titel :  Schloss Marquardt<br>Lat :  52.45802<br>Lon :  12.96182<br>Erreichen :  3<br>Finden :  3<br>Zeile :   11","Titel :  Sandfläche<br>Lat :  52.31439<br>Lon :  13.10879<br>Erreichen :  5<br>Finden :  4<br>Zeile :   12","Titel :  Unterführung<br>Lat :  52.40395<br>Lon :  12.87197<br>Erreichen :  5<br>Finden :  2<br>Zeile :   13","Titel :  Bake ('07)<br>Lat :  52.46089<br>Lon :  12.87773<br>Erreichen :  5<br>Finden :  4<br>Zeile :   14","Titel :  Aussichtsplattform<br>Lat :  52.40670<br>Lon :  12.96244<br>Erreichen :  3<br>Finden :  2<br>Zeile :   15","Titel :  Holzpilz<br>Lat :  52.38325<br>Lon :  13.00858<br>Erreichen :  2<br>Finden :  3<br>Zeile :   16","Titel :  Teichauslass<br>Lat :  52.41187<br>Lon :  13.00569<br>Erreichen :  2<br>Finden :  3<br>Zeile :   17","Titel :  Kirche<br>Lat :  52.42474<br>Lon :  13.09571<br>Erreichen :  2<br>Finden :  2<br>Zeile :   18","Titel :  Steg im Strandbad<br>Lat :  52.47000<br>Lon :  12.84595<br>Erreichen :  5<br>Finden :  2<br>Zeile :   19","Titel :  Flatowturm<br>Lat :  52.40485<br>Lon :  13.08931<br>Erreichen :  2<br>Finden :  2<br>Zeile :   20","Titel :  Forsthaus<br>Lat :  52.44214<br>Lon :  13.08679<br>Erreichen :  2<br>Finden :  2<br>Zeile :   21","Titel :  Findling<br>Lat :  52.33310<br>Lon :  13.14078<br>Erreichen :  5<br>Finden :  3<br>Zeile :   22","Titel :  Nikolskoe<br>Lat :  52.42442<br>Lon :  13.11699<br>Erreichen :  3<br>Finden :  2<br>Zeile :   23","Titel :  Bockwindmühle<br>Lat :  52.47038<br>Lon :  12.86706<br>Erreichen :  5<br>Finden :  4<br>Zeile :   24","Titel :  Windmühle Werder (Insel)<br>Lat :  52.37739<br>Lon :  12.94185<br>Erreichen :  4<br>Finden :  3<br>Zeile :   25","Titel :  Einsteinturm<br>Lat :  52.37921<br>Lon :  13.06392<br>Erreichen :  3<br>Finden :  2<br>Zeile :   26","Titel :  Schloss Lindstedt<br>Lat :  52.40993<br>Lon :  13.00995<br>Erreichen :  2<br>Finden :  2<br>Zeile :   27","Titel :  Toreinfahrt Petzower Park<br>Lat :  52.34440<br>Lon :  12.94714<br>Erreichen :  4<br>Finden :  4<br>Zeile :   28","Titel :  Kloster Lehnin ('07, '09)<br>Lat :  52.32107<br>Lon :  12.74255<br>Erreichen :  5<br>Finden :  1<br>Zeile :   29","Titel :  Windmühle Langerwisch<br>Lat :  52.32131<br>Lon :  13.08392<br>Erreichen :  5<br>Finden :  1<br>Zeile :   30","Titel :  ehem. S-Bahnbrücke<br>Lat :  52.39947<br>Lon :  13.18133<br>Erreichen :  4<br>Finden :  1<br>Zeile :   31","Titel :  Bauwagen<br>Lat :  52.45470<br>Lon :  13.04407<br>Erreichen :  2<br>Finden :  1<br>Zeile :   32","Titel :  Ruine<br>Lat :  52.42972<br>Lon :  13.06172<br>Erreichen :  2<br>Finden :  3<br>Zeile :   33","Titel :  Bunker<br>Lat :  52.36397<br>Lon :  13.07296<br>Erreichen :  3<br>Finden :  2<br>Zeile :   34","Titel :  Mauer 64ukr<br>Lat :  52.41522<br>Lon :  13.01291<br>Erreichen :  2<br>Finden :  1<br>Zeile :   35","Titel :  kleine Burg<br>Lat :  52.41961<br>Lon :  13.00190<br>Erreichen :  2<br>Finden :  2<br>Zeile :   36","Titel :  Kirche<br>Lat :  52.41912<br>Lon :  12.71951<br>Erreichen :  5<br>Finden :  1<br>Zeile :   37","Titel :  Schloß<br>Lat :  52.47244<br>Lon :  12.71500<br>Erreichen :  5<br>Finden :  3<br>Zeile :   38","Titel :  Kirche<br>Lat :  52.23297<br>Lon :  12.97714<br>Erreichen :  5<br>Finden :  2<br>Zeile :   39","Titel :  Kirche<br>Lat :  52.43094<br>Lon :  12.90781<br>Erreichen :  4<br>Finden :  2<br>Zeile :   40","Titel :  Rot_Blaue_Brücke<br>Lat :  52.48836<br>Lon :  12.93044<br>Erreichen :  5<br>Finden :  3<br>Zeile :   41","Titel :  Kirche<br>Lat :  52.40816<br>Lon :  12.86714<br>Erreichen :  5<br>Finden :  3<br>Zeile :   42","Titel :  Bushaltestelle_Wartehäuschen<br>Lat :  52.38678<br>Lon :  12.95320<br>Erreichen :  3<br>Finden :  2<br>Zeile :   43","Titel :  Türmchen<br>Lat :  52.39320<br>Lon :  12.93882<br>Erreichen :  3<br>Finden :  2<br>Zeile :   44","Titel :  Turm<br>Lat :  52.47825<br>Lon :  13.19670<br>Erreichen :  5<br>Finden :  2<br>Zeile :   45","Titel :  Sende-Anlage<br>Lat :  52.49774<br>Lon :  13.24110<br>Erreichen :  5<br>Finden :  2<br>Zeile :   46","Titel :  Eingangsgebäude<br>Lat :  52.43807<br>Lon :  13.17959<br>Erreichen :  4<br>Finden :  2<br>Zeile :   47","Titel :  Felsen<br>Lat :  52.49965<br>Lon :  13.24504<br>Erreichen :  5<br>Finden :  4<br>Zeile :   48","Titel :  Bahnhofsgebäude<br>Lat :  52.30345<br>Lon :  12.96426<br>Erreichen :  5<br>Finden :  4<br>Zeile :   49","Titel :  Schloß<br>Lat :  52.34883<br>Lon :  13.00017<br>Erreichen :  4<br>Finden :  1<br>Zeile :   50","Titel :  Weiße_Brücke<br>Lat :  52.35779<br>Lon :  12.99582<br>Erreichen :  3<br>Finden :  5<br>Zeile :   51","Titel :  Försterei<br>Lat :  52.38513<br>Lon :  13.00095<br>Erreichen :  2<br>Finden :  3<br>Zeile :   52","Titel :  geflügelte Kuh ('08)<br>Lat :  52.39400<br>Lon :  12.98212<br>Erreichen :  2<br>Finden :  2<br>Zeile :   53","Titel :  Hirsch<br>Lat :  52.39420<br>Lon :  13.01119<br>Erreichen :  2<br>Finden :  3<br>Zeile :   54","Titel :  Schloß<br>Lat :  52.49139<br>Lon :  12.98018<br>Erreichen :  4<br>Finden :  2<br>Zeile :   55","Titel :  Kirche<br>Lat :  52.54747<br>Lon :  12.94608<br>Erreichen :  5<br>Finden :  2<br>Zeile :   56","Titel :  Gotisches Haus<br>Lat :  52.47148<br>Lon :  12.87673<br>Erreichen :  5<br>Finden :  3<br>Zeile :   57","Titel :  Ziegel-Turm ('14)<br>Lat :  52.36058<br>Lon :  13.06534<br>Erreichen :  3<br>Finden :  2<br>Zeile :   58","Titel :  Schild CO2 Senke<br>Lat :  52.49137<br>Lon :  12.87172<br>Erreichen :  5<br>Finden :  1<br>Zeile :   59","Titel :  Kirche<br>Lat :  52.47860<br>Lon :  12.76567<br>Erreichen :  5<br>Finden :  2<br>Zeile :   60","Titel :  Schloß<br>Lat :  52.45788<br>Lon :  12.96334<br>Erreichen :  3<br>Finden :  2<br>Zeile :   61","Titel :  Brücke an der Nuthemündung<br>Lat :  52.39503<br>Lon :  13.07058<br>Erreichen :  2<br>Finden :  3<br>Zeile :   62","Titel :  Opferdenkmal 1.Weltkrieg<br>Lat :  52.42385<br>Lon :  12.99948<br>Erreichen :  2<br>Finden :  2<br>Zeile :   63","Titel :  Schranke Lerchensteig<br>Lat :  52.43609<br>Lon :  13.02025<br>Erreichen :  2<br>Finden :  3<br>Zeile :   64","Titel :  Heimvolkshochschule Seddiner S<br>Lat :  52.27687<br>Lon :  13.00882<br>Erreichen :  5<br>Finden :  1<br>Zeile :   65","Titel :  Schranke<br>Lat :  52.38056<br>Lon :  13.02979<br>Erreichen :  2<br>Finden :  3<br>Zeile :   66","Titel :  Steinbrunnen<br>Lat :  52.38157<br>Lon :  13.11678<br>Erreichen :  3<br>Finden :  2<br>Zeile :   67","Titel :  Tischtennisplatte<br>Lat :  52.40118<br>Lon :  13.10211<br>Erreichen :  3<br>Finden :  2<br>Zeile :   68","Titel :  Bahnland<br>Lat :  52.39458<br>Lon :  13.12707<br>Erreichen :  3<br>Finden :  2<br>Zeile :   69","Titel :  Denkmal<br>Lat :  52.39377<br>Lon :  13.09573<br>Erreichen :  3<br>Finden :  2<br>Zeile :   70","Titel :  Frosch<br>Lat :  52.39577<br>Lon :  13.12925<br>Erreichen :  3<br>Finden :  2<br>Zeile :   71","Titel :  Kita Sandscholle<br>Lat :  52.38816<br>Lon :  13.11059<br>Erreichen :  3<br>Finden :  3<br>Zeile :   72","Titel :  Klettergarten<br>Lat :  52.38380<br>Lon :  13.06741<br>Erreichen :  2<br>Finden :  2<br>Zeile :   73","Titel :  Fischerkirche<br>Lat :  52.31035<br>Lon :  12.92898<br>Erreichen :  5<br>Finden :  1<br>Zeile :   74","Titel :  Försterrei Kuhfort<br>Lat :  52.39148<br>Lon :  12.98338<br>Erreichen :  3<br>Finden :  1<br>Zeile :   75","Titel :  Gedenkstein (rote Schrift)<br>Lat :  52.39143<br>Lon :  12.98573<br>Erreichen :  2<br>Finden :  2<br>Zeile :   76","Titel :  Gedenkstein (schwarze Schrift) ('10, '13, '15)<br>Lat :  52.38374<br>Lon :  12.99720<br>Erreichen :  3<br>Finden :  1<br>Zeile :   77","Titel :  Hegemeisterbuche<br>Lat :  52.38376<br>Lon :  12.99724<br>Erreichen :  3<br>Finden :  2<br>Zeile :   78","Titel :  Holzkopf<br>Lat :  52.41228<br>Lon :  13.00659<br>Erreichen :  2<br>Finden :  3<br>Zeile :   79","Titel :  Blauer_Turm<br>Lat :  52.43375<br>Lon :  12.93888<br>Erreichen :  3<br>Finden :  3<br>Zeile :   80","Titel :  Ziegelei Glindow<br>Lat :  52.35432<br>Lon :  12.92211<br>Erreichen :  4<br>Finden :  1<br>Zeile :   81","Titel :  Einstein Haus<br>Lat :  52.35004<br>Lon :  13.01410<br>Erreichen :  4<br>Finden :  1<br>Zeile :   82","Titel :  Fluggerät<br>Lat :  52.41261<br>Lon :  12.82026<br>Erreichen :  5<br>Finden :  3<br>Zeile :   83","Titel :  Luthereiche<br>Lat :  52.41380<br>Lon :  12.76854<br>Erreichen :  5<br>Finden :  3<br>Zeile :   84","Titel :  Försterei<br>Lat :  52.31217<br>Lon :  12.90618<br>Erreichen :  5<br>Finden :  3<br>Zeile :   85","Titel :  Drei dicke Männer<br>Lat :  52.31765<br>Lon :  12.83504<br>Erreichen :  5<br>Finden :  1<br>Zeile :   86","Titel :  Hohe_Warte_Turm<br>Lat :  52.35961<br>Lon :  12.96727<br>Erreichen :  4<br>Finden :  2<br>Zeile :   87","Titel :  Rathaus<br>Lat :  52.37736<br>Lon :  12.94315<br>Erreichen :  4<br>Finden :  2<br>Zeile :   88","Titel :  Forsthaus<br>Lat :  52.35944<br>Lon :  13.02347<br>Erreichen :  3<br>Finden :  2<br>Zeile :   89","Titel :  Funkmast<br>Lat :  52.36995<br>Lon :  12.98515<br>Erreichen :  3<br>Finden :  2<br>Zeile :   90","Titel :  Telefonzellen!<br>Lat :  52.31849<br>Lon :  13.01370<br>Erreichen :  5<br>Finden :  3<br>Zeile :   91","Titel :  Schleuse<br>Lat :  52.39578<br>Lon :  13.20826<br>Erreichen :  5<br>Finden :  3<br>Zeile :   92","Titel :  Kogge<br>Lat :  52.29557<br>Lon :  12.86000<br>Erreichen :  5<br>Finden :  3<br>Zeile :   93","Titel :  Entenfang_Schild<br>Lat :  52.38767<br>Lon :  12.96470<br>Erreichen :  3<br>Finden :  3<br>Zeile :   94","Titel :  Konkav Konvex Steine<br>Lat :  52.38390<br>Lon :  13.05788<br>Erreichen :  2<br>Finden :  4<br>Zeile :   95","Titel :  Panzersperren<br>Lat :  52.26384<br>Lon :  12.80251<br>Erreichen :  5<br>Finden :  3<br>Zeile :   96","Titel :  Entzückender Rücken<br>Lat :  52.31805<br>Lon :  12.92494<br>Erreichen :  5<br>Finden :  2<br>Zeile :   97","Titel :  Komische Elch-Skulptur<br>Lat :  52.25353<br>Lon :  12.83592<br>Erreichen :  5<br>Finden :  2<br>Zeile :   98","Titel :  Oekolaube<br>Lat :  52.37463<br>Lon :  13.10657<br>Erreichen :  3<br>Finden :  3<br>Zeile :   99","Titel :  Bootssperre Mole Fahrland<br>Lat :  52.44389<br>Lon :  13.02466<br>Erreichen :  2<br>Finden :  2<br>Zeile :  100","Titel :  Schutzhütte Fahrland<br>Lat :  52.45244<br>Lon :  13.03299<br>Erreichen :  2<br>Finden :  2<br>Zeile :  101","Titel :  Grafitti Kasernenmauer<br>Lat :  52.46661<br>Lon :  13.03947<br>Erreichen :  3<br>Finden :  2<br>Zeile :  102","Titel :  Pavillon Hangars<br>Lat :  52.47510<br>Lon :  13.03673<br>Erreichen :  3<br>Finden :  3<br>Zeile :  103","Titel :  Rastplatz Ferbitz<br>Lat :  52.49308<br>Lon :  13.02024<br>Erreichen :  4<br>Finden :  3<br>Zeile :  104","Titel :  Hochsitz<br>Lat :  52.45223<br>Lon :  13.06148<br>Erreichen :  2<br>Finden :  3<br>Zeile :  105","Titel :  Gelbe Turmvilla<br>Lat :  52.44718<br>Lon :  13.05408<br>Erreichen :  2<br>Finden :  3<br>Zeile :  106","Titel :  Melkstand<br>Lat :  52.44408<br>Lon :  12.99954<br>Erreichen :  2<br>Finden :  1<br>Zeile :  107","Titel :  Bretterbrücke<br>Lat :  52.45266<br>Lon :  12.99017<br>Erreichen :  3<br>Finden :  2<br>Zeile :  108","Titel :  Stillgelegte Brücke<br>Lat :  52.45377<br>Lon :  12.99984<br>Erreichen :  3<br>Finden :  2<br>Zeile :  109","Titel :  Straußengehege<br>Lat :  52.45902<br>Lon :  13.00362<br>Erreichen :  3<br>Finden :  2<br>Zeile :  110","Titel :  Persiusturm<br>Lat :  52.43953<br>Lon :  13.01363<br>Erreichen :  2<br>Finden :  2<br>Zeile :  111","Titel :  Holzbrücke im Schlosspark Marquardt<br>Lat :  52.45415<br>Lon :  12.96440<br>Erreichen :  3<br>Finden :  3<br>Zeile :  112","Titel :  Vulkan-Werk<br>Lat :  52.39208<br>Lon :  12.93048<br>Erreichen :  4<br>Finden :  3<br>Zeile :  113","Titel :  Fachwerkhaus mit Holzverzierung<br>Lat :  52.46875<br>Lon :  12.94357<br>Erreichen :  4<br>Finden :  3<br>Zeile :  114","Titel :  Schild Westkurve<br>Lat :  52.39487<br>Lon :  13.03222<br>Erreichen :  2<br>Finden :  3<br>Zeile :  115","Titel :  Bärchen ('10-'12)<br>Lat :  52.39540<br>Lon :  13.06555<br>Erreichen :  2<br>Finden :  4<br>Zeile :  116","Titel :  Stiefel im Aquarium<br>Lat :  52.40060<br>Lon :  13.07742<br>Erreichen :  2<br>Finden :  4<br>Zeile :  117","Titel :  gelbes Kletterosengestell<br>Lat :  52.43211<br>Lon :  12.90234<br>Erreichen :  4<br>Finden :  1<br>Zeile :  118","Titel :  blaue Bank<br>Lat :  52.45305<br>Lon :  12.90027<br>Erreichen :  4<br>Finden :  2<br>Zeile :  119","Titel :  Schienenende<br>Lat :  52.40748<br>Lon :  13.17482<br>Erreichen :  4<br>Finden :  2<br>Zeile :  120","Titel :  Hof mit Sani Steinsoldat<br>Lat :  52.25886<br>Lon :  12.92826<br>Erreichen :  5<br>Finden :  2<br>Zeile :  121","Titel :  Wasserwirtschaftliche Anlage-Schwimmposten ('09)<br>Lat :  52.39929<br>Lon :  13.18584<br>Erreichen :  4<br>Finden :  1<br>Zeile :  122","Titel :  flache Schildkröte<br>Lat :  52.39299<br>Lon :  13.20059<br>Erreichen :  5<br>Finden :  2<br>Zeile :  123","Titel :  Aussicht mit Bank und Infotafel<br>Lat :  52.36670<br>Lon :  12.88562<br>Erreichen :  5<br>Finden :  2<br>Zeile :  124","Titel :  Schutzhütte neben gelbem Pfahl<br>Lat :  52.27269<br>Lon :  12.92682<br>Erreichen :  5<br>Finden :  2<br>Zeile :  125","Titel :  Schild PHASE F<br>Lat :  52.25533<br>Lon :  12.93116<br>Erreichen :  5<br>Finden :  3<br>Zeile :  126","Titel :  Gruselhütte<br>Lat :  52.39168<br>Lon :  13.18294<br>Erreichen :  4<br>Finden :  3<br>Zeile :  127","Titel :  Lichte Höhe 3m<br>Lat :  52.26810<br>Lon :  12.93781<br>Erreichen :  5<br>Finden :  3<br>Zeile :  128","Titel :  Riesentisch<br>Lat :  52.38598<br>Lon :  13.03726<br>Erreichen :  2<br>Finden :  4<br>Zeile :  129","Titel :  Wegweiser<br>Lat :  52.39940<br>Lon :  13.16798<br>Erreichen :  4<br>Finden :  4<br>Zeile :  130","Titel :  Mauerreste<br>Lat :  52.39855<br>Lon :  13.13510<br>Erreichen :  3<br>Finden :  1<br>Zeile :  131","Titel :  liegender Baum<br>Lat :  52.40718<br>Lon :  13.11080<br>Erreichen :  3<br>Finden :  2<br>Zeile :  132","Titel :  Pumpe<br>Lat :  52.40650<br>Lon :  13.15608<br>Erreichen :  4<br>Finden :  1<br>Zeile :  133","Titel :  Reitverbotsschild<br>Lat :  52.48295<br>Lon :  13.21813<br>Erreichen :  5<br>Finden :  2<br>Zeile :  134","Titel :  Gelateria Werder<br>Lat :  52.37850<br>Lon :  12.94014<br>Erreichen :  4<br>Finden :  1<br>Zeile :  135","Titel :  Kuh und Gans beim Landmann<br>Lat :  52.45455<br>Lon :  12.80574<br>Erreichen :  5<br>Finden :  1<br>Zeile :  136","Titel :  Storchennest bei der kleinen Bienenfarm<br>Lat :  52.44255<br>Lon :  12.79086<br>Erreichen :  5<br>Finden :  3<br>Zeile :  137","Titel :  Wegweiser nach Bern in Nattwerder<br>Lat :  52.42523<br>Lon :  12.93853<br>Erreichen :  3<br>Finden :  2<br>Zeile :  138","Titel :  Eiche SO-Ufer mit Wegzeichen<br>Lat :  52.34804<br>Lon :  13.07114<br>Erreichen :  4<br>Finden :  1<br>Zeile :  139","Titel :  Straßenschild Fichtenallee/Am Hirschsprung<br>Lat :  52.33025<br>Lon :  13.08715<br>Erreichen :  4<br>Finden :  3<br>Zeile :  140","Titel :  Steinplatten im Waldboden<br>Lat :  52.41528<br>Lon :  12.99037<br>Erreichen :  2<br>Finden :  3<br>Zeile :  141","Titel :  Wegweiser<br>Lat :  52.42323<br>Lon :  12.97994<br>Erreichen :  2<br>Finden :  3<br>Zeile :  142","Titel :  Strandbad<br>Lat :  52.36280<br>Lon :  13.18999<br>Erreichen :  5<br>Finden :  2<br>Zeile :  143","Titel :  Tor Nr. 185<br>Lat :  52.40016<br>Lon :  13.22638<br>Erreichen :  5<br>Finden :  2<br>Zeile :  144","Titel :  Freitreppe Hakeburg<br>Lat :  52.39900<br>Lon :  13.21949<br>Erreichen :  5<br>Finden :  2<br>Zeile :  145","Titel :  Gedenkstein Nordahl Grieg<br>Lat :  52.39759<br>Lon :  13.21694<br>Erreichen :  5<br>Finden :  2<br>Zeile :  146","Titel :  Trafostation Stansdorfer Str.<br>Lat :  52.39187<br>Lon :  13.11121<br>Erreichen :  3<br>Finden :  3<br>Zeile :  147","Titel :  Szenen einer Jagd<br>Lat :  52.39740<br>Lon :  13.09770<br>Erreichen :  3<br>Finden :  2<br>Zeile :  148","Titel :  Bus 206<br>Lat :  52.38738<br>Lon :  13.10259<br>Erreichen :  3<br>Finden :  3<br>Zeile :  149","Titel :  Weiße Halbkugel<br>Lat :  52.39015<br>Lon :  13.10410<br>Erreichen :  3<br>Finden :  3<br>Zeile :  150","Titel :  Grüner Biber<br>Lat :  52.46111<br>Lon :  13.06033<br>Erreichen :  3<br>Finden :  2<br>Zeile :  151","Titel :  Grafitti Wohnwagen<br>Lat :  52.39940<br>Lon :  12.97454<br>Erreichen :  3<br>Finden :  2<br>Zeile :  152","Titel :  Pumpe<br>Lat :  52.39063<br>Lon :  12.95506<br>Erreichen :  3<br>Finden :  3<br>Zeile :  153","Titel :  Kanaldurchlass<br>Lat :  52.39300<br>Lon :  12.96075<br>Erreichen :  3<br>Finden :  2<br>Zeile :  154","Titel :  Hochsitz<br>Lat :  52.37697<br>Lon :  12.97951<br>Erreichen :  3<br>Finden :  3<br>Zeile :  155","Titel :  Kleiner Teich<br>Lat :  52.37515<br>Lon :  12.98504<br>Erreichen :  3<br>Finden :  4<br>Zeile :  156","Titel :  Verfallenes Gebäude<br>Lat :  52.39792<br>Lon :  13.21554<br>Erreichen :  5<br>Finden :  3<br>Zeile :  157","Titel :  Haus mit lila Dach<br>Lat :  52.39730<br>Lon :  13.19744<br>Erreichen :  5<br>Finden :  2<br>Zeile :  158","Titel :  Schild \"Saugstelle\"<br>Lat :  52.40095<br>Lon :  13.15287<br>Erreichen :  4<br>Finden :  3<br>Zeile :  159","Titel :  BSR-Schild SO-Ecke Deponie<br>Lat :  52.40197<br>Lon :  13.13149<br>Erreichen :  3<br>Finden :  3<br>Zeile :  160","Titel :  Knüppelbrücke<br>Lat :  52.35013<br>Lon :  12.91393<br>Erreichen :  5<br>Finden :  4<br>Zeile :  161","Titel :  WM-Fernseher<br>Lat :  52.34568<br>Lon :  12.93698<br>Erreichen :  4<br>Finden :  5<br>Zeile :  162","Titel :  Eichhörnchenbild<br>Lat :  52.35026<br>Lon :  12.94932<br>Erreichen :  4<br>Finden :  5<br>Zeile :  163","Titel :  Kirche Geltow<br>Lat :  52.36500<br>Lon :  12.95597<br>Erreichen :  4<br>Finden :  3<br>Zeile :  164","Titel :  Garagentor mit roten Lüftungsschlitzen<br>Lat :  52.43623<br>Lon :  13.00785<br>Erreichen :  2<br>Finden :  2<br>Zeile :  165","Titel :  Grundwassermessstelle<br>Lat :  52.43459<br>Lon :  12.98469<br>Erreichen :  2<br>Finden :  2<br>Zeile :  166","Titel :  Ket-Gel 4<br>Lat :  52.44897<br>Lon :  12.97019<br>Erreichen :  3<br>Finden :  3<br>Zeile :  167","Titel :  Goldene Kreuze<br>Lat :  52.44074<br>Lon :  12.95782<br>Erreichen :  3<br>Finden :  2<br>Zeile :  168","Titel :  Baumhaus<br>Lat :  52.43867<br>Lon :  12.94331<br>Erreichen :  3<br>Finden :  1<br>Zeile :  169","Titel :  Karpfen<br>Lat :  52.44881<br>Lon :  12.89066<br>Erreichen :  4<br>Finden :  3<br>Zeile :  170","Titel :  Kleine Brücke<br>Lat :  52.44678<br>Lon :  12.89430<br>Erreichen :  4<br>Finden :  3<br>Zeile :  171","Titel :  Weinflasche<br>Lat :  52.44152<br>Lon :  12.89454<br>Erreichen :  4<br>Finden :  3<br>Zeile :  172","Titel :  Zerschmolzene Ziegel<br>Lat :  52.43031<br>Lon :  12.90586<br>Erreichen :  4<br>Finden :  2<br>Zeile :  173","Titel :  Prägung ND 16 GGL<br>Lat :  52.33744<br>Lon :  12.93150<br>Erreichen :  5<br>Finden :  4<br>Zeile :  174","Titel :  Planet 2011<br>Lat :  52.42480<br>Lon :  12.96789<br>Erreichen :  3<br>Finden :  4<br>Zeile :  175","Titel :  Achtung Ausbau Straßenschäden<br>Lat :  52.44645<br>Lon :  12.96434<br>Erreichen :  3<br>Finden :  4<br>Zeile :  176","Titel :  Weißer Strich an Kirche<br>Lat :  52.34554<br>Lon :  12.94213<br>Erreichen :  4<br>Finden :  4<br>Zeile :  177","Titel :  Rot im Walde<br>Lat :  52.30135<br>Lon :  12.91020<br>Erreichen :  5<br>Finden :  3<br>Zeile :  178","Titel :  WAC KMH<br>Lat :  52.26965<br>Lon :  12.94099<br>Erreichen :  5<br>Finden :  3<br>Zeile :  179","Titel :  Rückseite Schild Fähranleger<br>Lat :  52.34728<br>Lon :  12.98595<br>Erreichen :  4<br>Finden :  4<br>Zeile :  180","Titel :  Blaue Bank<br>Lat :  52.45409<br>Lon :  12.87080<br>Erreichen :  5<br>Finden :  3<br>Zeile :  181","Titel :  Rot im Wald<br>Lat :  52.43762<br>Lon :  13.04420<br>Erreichen :  2<br>Finden :  4<br>Zeile :  182","Titel :  Taube<br>Lat :  52.42283<br>Lon :  13.06239<br>Erreichen :  2<br>Finden :  3<br>Zeile :  183","Titel :  Zauntor mit Graffiti<br>Lat :  52.39072<br>Lon :  12.90188<br>Erreichen :  4<br>Finden :  3<br>Zeile :  184","Titel :  Brücke<br>Lat :  52.33047<br>Lon :  12.79245<br>Erreichen :  5<br>Finden :  2<br>Zeile :  185","Titel :  Sitzbänke unter Buche<br>Lat :  52.32822<br>Lon :  12.78076<br>Erreichen :  5<br>Finden :  3<br>Zeile :  186","Titel :  Reste Akropolis<br>Lat :  52.39567<br>Lon :  13.04414<br>Erreichen :  2<br>Finden :  1<br>Zeile :  187","Titel :  Blauer Elefant<br>Lat :  52.40396<br>Lon :  13.05205<br>Erreichen :  2<br>Finden :  3<br>Zeile :  188","Titel :  Rapunzelhaus<br>Lat :  52.40375<br>Lon :  13.07552<br>Erreichen :  2<br>Finden :  3<br>Zeile :  189","Titel :  Drei Wegsteine<br>Lat :  52.39046<br>Lon :  13.01580<br>Erreichen :  2<br>Finden :  3<br>Zeile :  190","Titel :  Barcode an der Bahn<br>Lat :  52.37182<br>Lon :  13.01391<br>Erreichen :  3<br>Finden :  3<br>Zeile :  191","Titel :  Mit Stacheldraht<br>Lat :  52.37043<br>Lon :  13.01586<br>Erreichen :  3<br>Finden :  2<br>Zeile :  192","Titel :  Schweinepostamt<br>Lat :  52.32905<br>Lon :  12.97845<br>Erreichen :  5<br>Finden :  3<br>Zeile :  193","Titel :  Weichtier im Sprung<br>Lat :  52.37652<br>Lon :  13.10269<br>Erreichen :  3<br>Finden :  2<br>Zeile :  194","Titel :  Bittere Butterblume<br>Lat :  52.37394<br>Lon :  13.10535<br>Erreichen :  3<br>Finden :  2<br>Zeile :  195","Titel :  Griegs Schlusspunkt<br>Lat :  52.39740<br>Lon :  13.21625<br>Erreichen :  5<br>Finden :  2<br>Zeile :  196","Titel :  Ein Einzelner Einzeller<br>Lat :  52.39879<br>Lon :  13.22004<br>Erreichen :  5<br>Finden :  2<br>Zeile :  197","Titel :  Brikettrundturm<br>Lat :  52.39689<br>Lon :  13.06104<br>Erreichen :  2<br>Finden :  4<br>Zeile :  198","Titel :  Familie Scholtiseks Beitrag<br>Lat :  52.39731<br>Lon :  13.05679<br>Erreichen :  2<br>Finden :  3<br>Zeile :  199","Titel :  Rote Badehose<br>Lat :  52.39354<br>Lon :  13.10705<br>Erreichen :  3<br>Finden :  2<br>Zeile :  200","Titel :  Schinkelkirche Petzow<br>Lat :  52.34558<br>Lon :  12.94218<br>Erreichen :  4<br>Finden :  2<br>Zeile :  201","Titel :  Zelter-Haus Petzow<br>Lat :  52.34254<br>Lon :  12.93636<br>Erreichen :  5<br>Finden :  2<br>Zeile :  202","Titel :  Kaiserlinde<br>Lat :  52.35049<br>Lon :  12.91498<br>Erreichen :  5<br>Finden :  2<br>Zeile :  203","Titel :  Richtung Schweiz<br>Lat :  52.42523<br>Lon :  12.93854<br>Erreichen :  3<br>Finden :  3<br>Zeile :  204","Titel :  Mauerstreifen<br>Lat :  52.38835<br>Lon :  13.02276<br>Erreichen :  2<br>Finden :  2<br>Zeile :  205","Titel :  Loch im Panzer<br>Lat :  52.38715<br>Lon :  13.02110<br>Erreichen :  2<br>Finden :  2<br>Zeile :  206","Titel :  Riesenschlange<br>Lat :  52.38638<br>Lon :  13.02213<br>Erreichen :  2<br>Finden :  3<br>Zeile :  207","Titel :  Bayernwappen an Mauerkrone<br>Lat :  52.39734<br>Lon :  13.07083<br>Erreichen :  2<br>Finden :  2<br>Zeile :  208","Titel :  Kunstautomat<br>Lat :  52.41478<br>Lon :  13.08085<br>Erreichen :  2<br>Finden :  2<br>Zeile :  209","Titel :  Wasserweiser<br>Lat :  52.41498<br>Lon :  13.07990<br>Erreichen :  2<br>Finden :  2<br>Zeile :  210","Titel :  Eisvogel<br>Lat :  52.33919<br>Lon :  12.98260<br>Erreichen :  4<br>Finden :  2<br>Zeile :  211","Titel :  120 kV Hohlweg<br>Lat :  52.32333<br>Lon :  12.99115<br>Erreichen :  5<br>Finden :  3<br>Zeile :  212","Titel :  Kopfloser Adler<br>Lat :  52.27963<br>Lon :  12.96298<br>Erreichen :  5<br>Finden :  4<br>Zeile :  213","Titel :  Besucherparkplatz<br>Lat :  52.26902<br>Lon :  13.00356<br>Erreichen :  5<br>Finden :  2<br>Zeile :  214","Titel :  Drumlintafel<br>Lat :  52.26697<br>Lon :  13.03783<br>Erreichen :  5<br>Finden :  2<br>Zeile :  215","Titel :  Notdürftiger Notdurftort<br>Lat :  52.27103<br>Lon :  13.05921<br>Erreichen :  5<br>Finden :  3<br>Zeile :  216","Titel :  Outdoorcouch<br>Lat :  52.26496<br>Lon :  13.05840<br>Erreichen :  5<br>Finden :  4<br>Zeile :  217","Titel :  Ehrfurcht<br>Lat :  52.28345<br>Lon :  13.06198<br>Erreichen :  5<br>Finden :  4<br>Zeile :  218","Titel :  Jahrhundertmeister<br>Lat :  52.32033<br>Lon :  13.12895<br>Erreichen :  5<br>Finden :  3<br>Zeile :  219","Titel :  Röhrenwerk<br>Lat :  52.34301<br>Lon :  13.15200<br>Erreichen :  5<br>Finden :  1<br>Zeile :  220","Titel :  Dunkle Beleuchtung<br>Lat :  52.31478<br>Lon :  12.98752<br>Erreichen :  5<br>Finden :  4<br>Zeile :  221","Titel :  Eunuch<br>Lat :  52.35692<br>Lon :  12.98372<br>Erreichen :  4<br>Finden :  4<br>Zeile :  222","Titel :  Gedenkkreuz<br>Lat :  52.29387<br>Lon :  12.95815<br>Erreichen :  5<br>Finden :  4<br>Zeile :  223","Titel :  Rotkäppchen<br>Lat :  52.26798<br>Lon :  12.96100<br>Erreichen :  5<br>Finden :  2<br>Zeile :  224","Titel :  Sed-Gel 5<br>Lat :  52.28343<br>Lon :  12.96109<br>Erreichen :  5<br>Finden :  2<br>Zeile :  225","Titel :  FFH statt FKK<br>Lat :  52.26965<br>Lon :  12.97610<br>Erreichen :  5<br>Finden :  3<br>Zeile :  226","Titel :  Klimax<br>Lat :  52.35253<br>Lon :  13.14739<br>Erreichen :  4<br>Finden :  3<br>Zeile :  227","Titel :  Mahlatrappe<br>Lat :  52.26574<br>Lon :  13.02395<br>Erreichen :  5<br>Finden :  3<br>Zeile :  228","Titel :  Rote Beine<br>Lat :  52.36552<br>Lon :  13.14037<br>Erreichen :  4<br>Finden :  2<br>Zeile :  229","Titel :  E10-2.M<br>Lat :  52.42180<br>Lon :  12.88690<br>Erreichen :  4<br>Finden :  1<br>Zeile :  230","Titel :  Neptun<br>Lat :  52.40368<br>Lon :  12.87181<br>Erreichen :  5<br>Finden :  1<br>Zeile :  231","Titel :  Pilzgerippe<br>Lat :  52.39910<br>Lon :  12.88410<br>Erreichen :  4<br>Finden :  3<br>Zeile :  232","Titel :  Steg im Wald<br>Lat :  52.41970<br>Lon :  12.88500<br>Erreichen :  4<br>Finden :  3<br>Zeile :  233","Titel :  SBT Pilz<br>Lat :  52.38643<br>Lon :  13.06531<br>Erreichen :  2<br>Finden :  3<br>Zeile :  234","Titel :  Alte Turmreste Wietkiekenberg Ferch<br>Lat :  52.30744<br>Lon :  12.94952<br>Erreichen :  5<br>Finden :  1<br>Zeile :  235","Titel :  Aussichtsturm Wietkiekenberg ('13)<br>Lat :  52.30744<br>Lon :  12.94952<br>Erreichen :  5<br>Finden :  2<br>Zeile :  236","Titel :  Baumhaus ohne Baum<br>Lat :  52.37481<br>Lon :  12.85360<br>Erreichen :  5<br>Finden :  1<br>Zeile :  237","Titel :  Naturdenkmal Eiche<br>Lat :  52.42693<br>Lon :  13.09611<br>Erreichen :  2<br>Finden :  1<br>Zeile :  238","Titel :  Schiefe Bahn<br>Lat :  52.42183<br>Lon :  13.06102<br>Erreichen :  2<br>Finden :  2<br>Zeile :  239","Titel :  101 Känguru<br>Lat :  52.42224<br>Lon :  13.06335<br>Erreichen :  2<br>Finden :  2<br>Zeile :  240","Titel :  Waschbär<br>Lat :  52.42221<br>Lon :  13.06349<br>Erreichen :  2<br>Finden :  2<br>Zeile :  241","Titel :  Zweiräderkonstruktion<br>Lat :  52.42716<br>Lon :  13.06480<br>Erreichen :  2<br>Finden :  3<br>Zeile :  242","Titel :  Anker<br>Lat :  52.42605<br>Lon :  13.06903<br>Erreichen :  2<br>Finden :  1<br>Zeile :  243","Titel :  Lila Rolladen<br>Lat :  52.39632<br>Lon :  13.07753<br>Erreichen :  2<br>Finden :  3<br>Zeile :  244","Titel :  Steinmauer mit Nadelbäumen<br>Lat :  52.39373<br>Lon :  13.08066<br>Erreichen :  2<br>Finden :  1<br>Zeile :  245","Titel :  Sitzender Biber<br>Lat :  52.38043<br>Lon :  13.09657<br>Erreichen :  3<br>Finden :  2<br>Zeile :  246","Titel :  Brummkreisel<br>Lat :  52.42631<br>Lon :  13.05421<br>Erreichen :  2<br>Finden :  2<br>Zeile :  247","Titel :  LOFAR Schild<br>Lat :  52.43913<br>Lon :  13.01592<br>Erreichen :  2<br>Finden :  2<br>Zeile :  248","Titel :  Persiusturm<br>Lat :  52.43957<br>Lon :  13.01355<br>Erreichen :  2<br>Finden :  1<br>Zeile :  249","Titel :  Gestaltung der historischen Kulturlandschaft Stein<br>Lat :  52.43965<br>Lon :  13.01330<br>Erreichen :  2<br>Finden :  2<br>Zeile :  250","Titel :  Schildsammlung<br>Lat :  52.43838<br>Lon :  13.01028<br>Erreichen :  2<br>Finden :  3<br>Zeile :  251","Titel :  Karibu Holzhaus 1909-2009<br>Lat :  52.43810<br>Lon :  13.00956<br>Erreichen :  2<br>Finden :  5<br>Zeile :  252","Titel :  Hochsitz<br>Lat :  52.44651<br>Lon :  12.98911<br>Erreichen :  3<br>Finden :  1<br>Zeile :  253","Titel :  kleines verfallenes Haus am Kanal<br>Lat :  52.44971<br>Lon :  12.98891<br>Erreichen :  3<br>Finden :  2<br>Zeile :  254","Titel :  Brücke<br>Lat :  52.44981<br>Lon :  12.98891<br>Erreichen :  3<br>Finden :  3<br>Zeile :  255","Titel :  Slipanlagen<br>Lat :  52.45148<br>Lon :  12.97715<br>Erreichen :  3<br>Finden :  2<br>Zeile :  256","Titel :  Villa Paule<br>Lat :  52.45156<br>Lon :  12.96383<br>Erreichen :  3<br>Finden :  2<br>Zeile :  257","Titel :  Zwei Forellen<br>Lat :  52.44904<br>Lon :  12.96225<br>Erreichen :  3<br>Finden :  2<br>Zeile :  258","Titel :  Schritt!<br>Lat :  52.39961<br>Lon :  13.04818<br>Erreichen :  2<br>Finden :  2<br>Zeile :  259","Titel :  Schafe mit Lamm<br>Lat :  52.40474<br>Lon :  12.96098<br>Erreichen :  3<br>Finden :  2<br>Zeile :  260","Titel :  Giraffe<br>Lat :  52.40031<br>Lon :  13.01067<br>Erreichen :  2<br>Finden :  4<br>Zeile :  261","Titel :  Hahn<br>Lat :  52.42098<br>Lon :  13.05406<br>Erreichen :  1<br>Finden :  4<br>Zeile :  262","Titel :  Ganz laut schreien<br>Lat :  52.40065<br>Lon :  13.04852<br>Erreichen :  2<br>Finden :  3<br>Zeile :  263","Titel :  Mensch-Lampe-Hund<br>Lat :  52.39856<br>Lon :  13.04818<br>Erreichen :  2<br>Finden :  2<br>Zeile :  264","Titel :  Löschwassereinspeisung<br>Lat :  52.39800<br>Lon :  13.06023<br>Erreichen :  2<br>Finden :  4<br>Zeile :  265","Titel :  Fünf vor Eins<br>Lat :  52.40657<br>Lon :  13.05817<br>Erreichen :  2<br>Finden :  2<br>Zeile :  266","Titel :  Reinwasser-Hochbehälter<br>Lat :  52.42088<br>Lon :  13.06241<br>Erreichen :  2<br>Finden :  3<br>Zeile :  267","Titel :  SK-10 Stempelstelle<br>Lat :  52.42102<br>Lon :  13.06265<br>Erreichen :  2<br>Finden :  2<br>Zeile :  268","Titel :  Kaugummiautomat<br>Lat :  52.42114<br>Lon :  13.05644<br>Erreichen :  1<br>Finden :  2<br>Zeile :  269","Titel :  Eichhörnchen oder Fuchs<br>Lat :  52.45706<br>Lon :  13.05936<br>Erreichen :  3<br>Finden :  2<br>Zeile :  270","Titel :  Steinkreis<br>Lat :  52.45883<br>Lon :  13.05517<br>Erreichen :  3<br>Finden :  3<br>Zeile :  271","Titel :  Schild Zehn aus Europa<br>Lat :  52.39565<br>Lon :  13.04943<br>Erreichen :  2<br>Finden :  2<br>Zeile :  272","Titel :  Karl-Marx-Stadt 175km<br>Lat :  52.39383<br>Lon :  13.06073<br>Erreichen :  2<br>Finden :  2<br>Zeile :  273","Titel :  Riesenrutsche<br>Lat :  52.29475<br>Lon :  12.85945<br>Erreichen :  5<br>Finden :  2<br>Zeile :  274","Titel :  Tanzende Mädchen<br>Lat :  52.41270<br>Lon :  13.03674<br>Erreichen :  1<br>Finden :  3<br>Zeile :  275","Titel :  Zwei Schweine<br>Lat :  52.41808<br>Lon :  13.03954<br>Erreichen :  1<br>Finden :  4<br>Zeile :  276","Titel :  Zwei Brote und eine Katze<br>Lat :  52.39444<br>Lon :  13.09552<br>Erreichen :  3<br>Finden :  2<br>Zeile :  277","Titel :  Insekt<br>Lat :  52.39439<br>Lon :  13.09554<br>Erreichen :  3<br>Finden :  3<br>Zeile :  278","Titel :  Denkender sitzender Mann<br>Lat :  52.39431<br>Lon :  13.09540<br>Erreichen :  3<br>Finden :  2<br>Zeile :  279","Titel :  Einsteinturm<br>Lat :  52.39110<br>Lon :  13.08855<br>Erreichen :  3<br>Finden :  2<br>Zeile :  280","Titel :  Eremitage<br>Lat :  52.42103<br>Lon :  13.07754<br>Erreichen :  2<br>Finden :  3<br>Zeile :  281","Titel :  Halbe Reifen<br>Lat :  52.41602<br>Lon :  13.08107<br>Erreichen :  2<br>Finden :  3<br>Zeile :  282","Titel :  Kongsnaes<br>Lat :  52.41538<br>Lon :  13.08376<br>Erreichen :  2<br>Finden :  3<br>Zeile :  283","Titel :  Briefkasten Royal Louise<br>Lat :  52.41521<br>Lon :  13.08385<br>Erreichen :  2<br>Finden :  3<br>Zeile :  284","Titel :  Goldener Löwe Blick Berlin<br>Lat :  52.41338<br>Lon :  13.09563<br>Erreichen :  2<br>Finden :  3<br>Zeile :  285","Titel :  Maus frisst Käse<br>Lat :  52.40347<br>Lon :  13.05000<br>Erreichen :  2<br>Finden :  3<br>Zeile :  286","Titel :  Same same but different in orange<br>Lat :  52.41582<br>Lon :  13.05004<br>Erreichen :  1<br>Finden :  3<br>Zeile :  287","Titel :  SPR-Z<br>Lat :  52.39723<br>Lon :  13.05887<br>Erreichen :  2<br>Finden :  3<br>Zeile :  288","Titel :  Mühle<br>Lat :  52.40167<br>Lon :  13.05805<br>Erreichen :  2<br>Finden :  3<br>Zeile :  289","Titel :  Kleines Spitzdachhaus<br>Lat :  52.40736<br>Lon :  13.06508<br>Erreichen :  2<br>Finden :  2<br>Zeile :  290","Titel :  Alter Jagdheiliger<br>Lat :  52.39162<br>Lon :  12.99698<br>Erreichen :  2<br>Finden :  2<br>Zeile :  291","Titel :  Zweigstelle Kinderauslieferungsdienst<br>Lat :  52.40772<br>Lon :  12.96158<br>Erreichen :  3<br>Finden :  3<br>Zeile :  292","Titel :  Blauer Deckel und blauer Topf<br>Lat :  52.38594<br>Lon :  13.06571<br>Erreichen :  2<br>Finden :  2<br>Zeile :  293","Titel :  Hinweis auf \"Poztupimi\"<br>Lat :  52.39712<br>Lon :  13.06977<br>Erreichen :  2<br>Finden :  3<br>Zeile :  294","Titel :  Wassertaxi<br>Lat :  52.36533<br>Lon :  13.01224<br>Erreichen :  3<br>Finden :  3<br>Zeile :  295","Titel :  grüne Brücke<br>Lat :  52.34951<br>Lon :  12.74260<br>Erreichen :  5<br>Finden :  4<br>Zeile :  296","Titel :  blaues Dreibein<br>Lat :  52.43289<br>Lon :  13.09499<br>Erreichen :  2<br>Finden :  4<br>Zeile :  297","Titel :  Wireless Man<br>Lat :  52.42468<br>Lon :  13.09623<br>Erreichen :  1<br>Finden :  2<br>Zeile :  298","Titel :  Sprudelbirne<br>Lat :  52.41143<br>Lon :  13.09875<br>Erreichen :  1<br>Finden :  2<br>Zeile :  299","Titel :  Leuchtturm<br>Lat :  52.42110<br>Lon :  13.01331<br>Erreichen :  2<br>Finden :  2<br>Zeile :  300","Titel :  Blaues Holzboot<br>Lat :  52.42233<br>Lon :  13.00632<br>Erreichen :  2<br>Finden :  2<br>Zeile :  301","Titel :  Fisch<br>Lat :  52.45026<br>Lon :  13.03159<br>Erreichen :  2<br>Finden :  1<br>Zeile :  302","Titel :  Schwedischer Felsenbrunnen<br>Lat :  52.46076<br>Lon :  13.07297<br>Erreichen :  3<br>Finden :  1<br>Zeile :  303","Titel :  Hahn<br>Lat :  52.44548<br>Lon :  13.04004<br>Erreichen :  2<br>Finden :  1<br>Zeile :  304","Titel :  Das Glück liegt in der Wiese<br>Lat :  52.42331<br>Lon :  13.00436<br>Erreichen :  2<br>Finden :  2<br>Zeile :  305","Titel :  NSGSchild mit See<br>Lat :  52.45505<br>Lon :  13.10775<br>Erreichen :  5<br>Finden :  2<br>Zeile :  306","Titel :  Pferd<br>Lat :  52.46589<br>Lon :  13.10781<br>Erreichen :  5<br>Finden :  2<br>Zeile :  307","Titel :  PostBriefkasten<br>Lat :  52.46299<br>Lon :  13.07940<br>Erreichen :  4<br>Finden :  1<br>Zeile :  308","Titel :  Brücke<br>Lat :  52.43096<br>Lon :  13.06235<br>Erreichen :  2<br>Finden :  1<br>Zeile :  309","Titel :  Schwerhöriger Papagei<br>Lat :  52.42601<br>Lon :  13.06887<br>Erreichen :  2<br>Finden :  3<br>Zeile :  310","Titel :  Wasserfall<br>Lat :  52.43577<br>Lon :  13.05494<br>Erreichen :  2<br>Finden :  3<br>Zeile :  311","Titel :  Gelbes Zelt<br>Lat :  52.35943<br>Lon :  12.96232<br>Erreichen :  2<br>Finden :  3<br>Zeile :  312","Titel :  Raum ist in der kleinsten Hütte<br>Lat :  52.37341<br>Lon :  13.08272<br>Erreichen :  2<br>Finden :  2<br>Zeile :  313","Titel :  Safety third<br>Lat :  52.45583<br>Lon :  12.89583<br>Erreichen :  2<br>Finden :  3<br>Zeile :  314","Titel :  Sitzecke<br>Lat :  52.38822<br>Lon :  12.96477<br>Erreichen :  3<br>Finden :  3<br>Zeile :  315","Titel :  Grüne Innenarchitektur<br>Lat :  52.39122<br>Lon :  12.94914<br>Erreichen :  3<br>Finden :  3<br>Zeile :  316","Titel :  Obelisk<br>Lat :  52.52370<br>Lon :  13.07981<br>Erreichen :  3<br>Finden :  2<br>Zeile :  317","Titel :  Achteckdach<br>Lat :  52.50573<br>Lon :  13.08834<br>Erreichen :  4<br>Finden :  2<br>Zeile :  318","Titel :  Oase in der Wüste<br>Lat :  52.50402<br>Lon :  13.01494<br>Erreichen :  4<br>Finden :  2<br>Zeile :  319","Titel :  Blick Richtung Nauen<br>Lat :  52.48997<br>Lon :  13.05418<br>Erreichen :  5<br>Finden :  2<br>Zeile :  320","Titel :  Bunkerreste<br>Lat :  52.49378<br>Lon :  13.07680<br>Erreichen :  4<br>Finden :  3<br>Zeile :  321","Titel :  Leben im Feld<br>Lat :  52.47897<br>Lon :  13.08878<br>Erreichen :  3<br>Finden :  2<br>Zeile :  322","Titel :  Leben im Teich<br>Lat :  52.47228<br>Lon :  12.89159<br>Erreichen :  3<br>Finden :  3<br>Zeile :  323","Titel :  Schwarzer Reiter<br>Lat :  52.47181<br>Lon :  12.89791<br>Erreichen :  3<br>Finden :  3<br>Zeile :  324","Titel :  Vollpfosten im Dreiecksgehege<br>Lat :  52.46842<br>Lon :  12.89295<br>Erreichen :  3<br>Finden :  3<br>Zeile :  325","Titel :  Sechs im roten Quadrat<br>Lat :  52.46348<br>Lon :  12.88548<br>Erreichen :  3<br>Finden :  3<br>Zeile :  326","Titel :  Schwimmposten Alle Wege führen nach Köpenick<br>Lat :  52.41278<br>Lon :  13.09111<br>Erreichen :  2<br>Finden :  4<br>Zeile :  327","Titel :  Brücke Weiß auf Blau<br>Lat :  52.41361<br>Lon :  13.09083<br>Erreichen :  2<br>Finden :  3<br>Zeile :  328","Titel :  FKK-Stele<br>Lat :  52.40944<br>Lon :  13.06278<br>Erreichen :  1<br>Finden :  2<br>Zeile :  329","Titel :  Biene über Schlitten neben Vogel<br>Lat :  52.41500<br>Lon :  13.06972<br>Erreichen :  1<br>Finden :  2<br>Zeile :  330","Titel :  Woschod<br>Lat :  52.39602<br>Lon :  13.05302<br>Erreichen :  1<br>Finden :  1<br>Zeile :  331","Titel :  Brücke Kleinasien<br>Lat :  52.36669<br>Lon :  13.08523<br>Erreichen :  1<br>Finden :  3<br>Zeile :  332","Titel :  Löwentor<br>Lat :  52.42710<br>Lon :  13.15905<br>Erreichen :  4<br>Finden :  1<br>Zeile :  333","Titel :  König von Wannsee<br>Lat :  52.41871<br>Lon :  13.15308<br>Erreichen :  4<br>Finden :  1<br>Zeile :  334","Titel :  Fall für den Kiefernorthopäden<br>Lat :  52.42351<br>Lon :  13.03671<br>Erreichen :  1<br>Finden :  2<br>Zeile :  335","Titel :  Werkzeugkasten<br>Lat :  52.37960<br>Lon :  13.01901<br>Erreichen :  2<br>Finden :  2<br>Zeile :  336","Titel :  Dream<br>Lat :  52.37417<br>Lon :  13.11417<br>Erreichen :  2<br>Finden :  3<br>Zeile :  337","Titel :  Hier war Goethe<br>Lat :  52.38259<br>Lon :  13.12267<br>Erreichen :  2<br>Finden :  3<br>Zeile :  338","Titel :  Hirschgeweih (+2 mit Ziege)<br>Lat :  52.38250<br>Lon :  13.12250<br>Erreichen :  2<br>Finden :  3<br>Zeile :  339","Titel :  Palastrest<br>Lat :  52.35360<br>Lon :  13.01758<br>Erreichen :  2<br>Finden :  1<br>Zeile :  340","Titel :  10 m Spannweite<br>Lat :  52.38968<br>Lon :  13.03682<br>Erreichen :  2<br>Finden :  2<br>Zeile :  341","Titel :  Festungsstumpf<br>Lat :  52.38948<br>Lon :  13.03785<br>Erreichen :  2<br>Finden :  2<br>Zeile :  342","Titel :  Stonewashed Haus<br>Lat :  52.35855<br>Lon :  12.96558<br>Erreichen :  3<br>Finden :  1<br>Zeile :  343","Titel :  Lorbeeren aufm Kopf<br>Lat :  52.42206<br>Lon :  13.17758<br>Erreichen :  3<br>Finden :  2<br>Zeile :  344","Titel :  Ein Viertel Haus<br>Lat :  52.37365<br>Lon :  12.97645<br>Erreichen :  4<br>Finden :  3<br>Zeile :  345","Titel :  Mini AVUS<br>Lat :  52.44306<br>Lon :  13.20139<br>Erreichen :  4<br>Finden :  3<br>Zeile :  346","Titel :  Betonpanzer<br>Lat :  52.44444<br>Lon :  13.20222<br>Erreichen :  4<br>Finden :  4<br>Zeile :  347","Titel :  Wartehäuschen<br>Lat :  52.38694<br>Lon :  13.04000<br>Erreichen :  3<br>Finden :  2<br>Zeile :  348","Titel :  Grüner Elefant<br>Lat :  52.41601<br>Lon :  13.06906<br>Erreichen :  1<br>Finden :  1<br>Zeile :  349","Titel :  Elefantenbaum<br>Lat :  52.41605<br>Lon :  13.06912<br>Erreichen :  1<br>Finden :  2<br>Zeile :  350","Titel :  Pferd im Sprung<br>Lat :  52.39755<br>Lon :  13.04649<br>Erreichen :  1<br>Finden :  3<br>Zeile :  351","Titel :  Strand am Schäfersee<br>Lat :  52.37459<br>Lon :  13.11991<br>Erreichen :  2<br>Finden :  2<br>Zeile :  352","Titel :  Einer für alle<br>Lat :  52.47581<br>Lon :  12.98848<br>Erreichen :  2<br>Finden :  2<br>Zeile :  353","Titel :  Des Kaisers Blick in Silber<br>Lat :  52.38835<br>Lon :  13.06234<br>Erreichen :  2<br>Finden :  3<br>Zeile :  354","Titel :  steinige Windrose<br>Lat :  52.38764<br>Lon :  13.06059<br>Erreichen :  2<br>Finden :  3<br>Zeile :  355","Titel :  1824<br>Lat :  52.30844<br>Lon :  13.02718<br>Erreichen :  3<br>Finden :  1<br>Zeile :  356","Titel :  Adler<br>Lat :  52.46420<br>Lon :  13.00941<br>Erreichen :  3<br>Finden :  1<br>Zeile :  357","Titel :  Feuerwehr<br>Lat :  52.30905<br>Lon :  13.02757<br>Erreichen :  3<br>Finden :  1<br>Zeile :  358","Titel :  Gesang verschönert das Leben<br>Lat :  52.34258<br>Lon :  12.93643<br>Erreichen :  3<br>Finden :  2<br>Zeile :  359","Titel :  Eckiger Turm<br>Lat :  52.28917<br>Lon :  12.98952<br>Erreichen :  4<br>Finden :  1<br>Zeile :  360","Titel :  Bartenwal<br>Lat :  52.34637<br>Lon :  12.98557<br>Erreichen :  4<br>Finden :  2<br>Zeile :  361","Titel :  NSG-Eule<br>Lat :  52.31253<br>Lon :  12.97307<br>Erreichen :  5<br>Finden :  2<br>Zeile :  362","Titel :  Weißer Vogel<br>Lat :  52.40256<br>Lon :  13.25783<br>Erreichen :  5<br>Finden :  3<br>Zeile :  363","Titel :  Eckhausbild<br>Lat :  52.40256<br>Lon :  13.25880<br>Erreichen :  5<br>Finden :  3<br>Zeile :  364","Titel :  Oma guckt aus Fenster<br>Lat :  52.40253<br>Lon :  13.26187<br>Erreichen :  5<br>Finden :  3<br>Zeile :  365","Titel :  Katze guckt aus Fenster<br>Lat :  52.40257<br>Lon :  13.26189<br>Erreichen :  5<br>Finden :  3<br>Zeile :  366","Titel :  Landrat<br>Lat :  52.40273<br>Lon :  13.26389<br>Erreichen :  5<br>Finden :  2<br>Zeile :  367","Titel :  Sportler in weiß<br>Lat :  52.40406<br>Lon :  13.21748<br>Erreichen :  4<br>Finden :  2<br>Zeile :  368","Titel :  Römerbank<br>Lat :  52.42444<br>Lon :  13.09479<br>Erreichen :  3<br>Finden :  3<br>Zeile :  369","Titel :  Entlüftungsschacht Moritzberg<br>Lat :  52.40339<br>Lon :  13.12509<br>Erreichen :  3<br>Finden :  3<br>Zeile :  370","Titel :  MDCCXXXIII<br>Lat :  52.40266<br>Lon :  13.05269<br>Erreichen :  2<br>Finden :  1<br>Zeile :  371","Titel :  Skandinavischer Stein<br>Lat :  52.40765<br>Lon :  13.05334<br>Erreichen :  2<br>Finden :  1<br>Zeile :  372","Titel :  Pumpe<br>Lat :  52.41052<br>Lon :  13.05711<br>Erreichen :  2<br>Finden :  1<br>Zeile :  373","Titel :  Riesen Sitzkreis<br>Lat :  52.41361<br>Lon :  13.05618<br>Erreichen :  1<br>Finden :  1<br>Zeile :  374","Titel :  Orthodox<br>Lat :  52.41534<br>Lon :  13.05745<br>Erreichen :  2<br>Finden :  2<br>Zeile :  375","Titel :  Bagger<br>Lat :  52.42776<br>Lon :  13.05169<br>Erreichen :  2<br>Finden :  1<br>Zeile :  376","Titel :  Dreifachgrundwassermesser<br>Lat :  52.43422<br>Lon :  13.05053<br>Erreichen :  2<br>Finden :  2<br>Zeile :  377","Titel :  Brücke des Friedens<br>Lat :  52.43659<br>Lon :  13.05135<br>Erreichen :  2<br>Finden :  1<br>Zeile :  378","Titel :  Farben des Golmer Fußballteams<br>Lat :  52.44353<br>Lon :  13.04587<br>Erreichen :  2<br>Finden :  2<br>Zeile :  379","Titel :  Golmfarbig, 1978<br>Lat :  52.44754<br>Lon :  13.04081<br>Erreichen :  3<br>Finden :  3<br>Zeile :  380","Titel :  Nikolaikirche<br>Lat :  52.44811<br>Lon :  13.03828<br>Erreichen :  3<br>Finden :  4<br>Zeile :  381","Titel :  Julius Hennicke<br>Lat :  52.44824<br>Lon :  13.03802<br>Erreichen :  3<br>Finden :  4<br>Zeile :  382","Titel :  Tor<br>Lat :  52.44917<br>Lon :  13.03831<br>Erreichen :  3<br>Finden :  3<br>Zeile :  383","Titel :  Richtfunkantenne<br>Lat :  52.44961<br>Lon :  13.03600<br>Erreichen :  3<br>Finden :  4<br>Zeile :  384","Titel :  Fisch<br>Lat :  52.45096<br>Lon :  13.03204<br>Erreichen :  3<br>Finden :  1<br>Zeile :  385","Titel :  Rute<br>Lat :  52.45951<br>Lon :  13.02330<br>Erreichen :  4<br>Finden :  2<br>Zeile :  386","Titel :  Der Wirkliche Mittelpunkt<br>Lat :  52.45921<br>Lon :  13.01654<br>Erreichen :  4<br>Finden :  3<br>Zeile :  387","Titel :  Rehmühle<br>Lat :  52.46632<br>Lon :  13.01206<br>Erreichen :  4<br>Finden :  1<br>Zeile :  388","Titel :  Adler<br>Lat :  52.46434<br>Lon :  13.00953<br>Erreichen :  4<br>Finden :  1<br>Zeile :  389","Titel :  Eule<br>Lat :  52.46124<br>Lon :  13.00687<br>Erreichen :  4<br>Finden :  1<br>Zeile :  390","Titel :  Red Hot Chili Peppers famous song<br>Lat :  52.45194<br>Lon :  12.98001<br>Erreichen :  4<br>Finden :  1<br>Zeile :  391","Titel :  Schöpfwerk<br>Lat :  52.44963<br>Lon :  12.98893<br>Erreichen :  4<br>Finden :  2<br>Zeile :  392","Titel :  BlauPunkt<br>Lat :  52.44309<br>Lon :  12.99933<br>Erreichen :  3<br>Finden :  2<br>Zeile :  393","Titel :  Persiusturm<br>Lat :  52.43959<br>Lon :  13.01350<br>Erreichen :  2<br>Finden :  1<br>Zeile :  394","Titel :  Hammer Aussicht ;-)<br>Lat :  52.43246<br>Lon :  13.02419<br>Erreichen :  2<br>Finden :  1<br>Zeile :  395","Titel :  Stein<br>Lat :  52.42615<br>Lon :  13.02506<br>Erreichen :  1<br>Finden :  1<br>Zeile :  396","Titel :  Poller<br>Lat :  52.42217<br>Lon :  13.02497<br>Erreichen :  1<br>Finden :  1<br>Zeile :  397","Titel :  DN80, PN16, GGG 50<br>Lat :  52.42060<br>Lon :  13.03547<br>Erreichen :  1<br>Finden :  2<br>Zeile :  398","Titel :  Kletterfels<br>Lat :  52.41363<br>Lon :  13.03101<br>Erreichen :  1<br>Finden :  1<br>Zeile :  399","Titel :  Nase<br>Lat :  52.41036<br>Lon :  13.03360<br>Erreichen :  1<br>Finden :  2<br>Zeile :  400","Titel :  Augenblick<br>Lat :  52.45712<br>Lon :  13.04839<br>Erreichen :  3<br>Finden :  1<br>Zeile :  401","Titel :  Steinkreis<br>Lat :  52.45879<br>Lon :  13.05510<br>Erreichen :  4<br>Finden :  2<br>Zeile :  402","Titel :  Wasserstelle1<br>Lat :  52.45431<br>Lon :  13.00018<br>Erreichen :  4<br>Finden :  1<br>Zeile :  403","Titel :  Wasserstelle2<br>Lat :  52.44920<br>Lon :  13.00232<br>Erreichen :  3<br>Finden :  1<br>Zeile :  404","Titel :  Quelle<br>Lat :  52.44687<br>Lon :  13.00103<br>Erreichen :  3<br>Finden :  2<br>Zeile :  405","Titel :  DoppelBaum Pfad<br>Lat :  52.45144<br>Lon :  12.98428<br>Erreichen :  4<br>Finden :  5<br>Zeile :  406","Titel :  Aussicht Heineberg Zugang<br>Lat :  52.43286<br>Lon :  12.98608<br>Erreichen :  3<br>Finden :  1<br>Zeile :  407","Titel :  Aussicht (Photo: weiße Säcke)<br>Lat :  52.43399<br>Lon :  12.98815<br>Erreichen :  3<br>Finden :  5<br>Zeile :  408","Titel :  Buckel<br>Lat :  52.42383<br>Lon :  12.99937<br>Erreichen :  2<br>Finden :  2<br>Zeile :  409","Titel :  Steht ein Pilz im Wald…<br>Lat :  52.43831<br>Lon :  13.02747<br>Erreichen :  2<br>Finden :  1<br>Zeile :  410","Titel :  Nicht nachdenken<br>Lat :  52.43375<br>Lon :  13.04155<br>Erreichen :  2<br>Finden :  1<br>Zeile :  411","Titel :  Urlaub der Bundeswehr<br>Lat :  52.42886<br>Lon :  13.04149<br>Erreichen :  1<br>Finden :  1<br>Zeile :  412","Titel :  Auch mal nachdenken<br>Lat :  52.42057<br>Lon :  13.02076<br>Erreichen :  1<br>Finden :  3<br>Zeile :  413","Titel :  Bankski_1<br>Lat :  52.42071<br>Lon :  13.03215<br>Erreichen :  1<br>Finden :  1<br>Zeile :  414","Titel :  Bankski_2<br>Lat :  52.42105<br>Lon :  13.03273<br>Erreichen :  1<br>Finden :  1<br>Zeile :  415","Titel :  Nicht alt<br>Lat :  52.41593<br>Lon :  13.03135<br>Erreichen :  1<br>Finden :  1<br>Zeile :  416","Titel :  Gold<br>Lat :  52.40539<br>Lon :  13.04048<br>Erreichen :  1<br>Finden :  1<br>Zeile :  417","Titel :  Chillstein<br>Lat :  52.35997<br>Lon :  12.96458<br>Erreichen :  3<br>Finden :  1<br>Zeile :  418","Titel :  Silvaner<br>Lat :  52.36984<br>Lon :  12.93219<br>Erreichen :  4<br>Finden :  5<br>Zeile :  419","Titel :  Aussichtsturm_Wachtelberg<br>Lat :  52.36997<br>Lon :  12.93328<br>Erreichen :  4<br>Finden :  1<br>Zeile :  420","Titel :  Schlafwandler<br>Lat :  52.26639<br>Lon :  12.92166<br>Erreichen :  4<br>Finden :  3<br>Zeile :  421","Titel :  Kirchturm<br>Lat :  52.33957<br>Lon :  12.86765<br>Erreichen :  4<br>Finden :  3<br>Zeile :  422","Titel :  Kroatendenkmal<br>Lat :  52.26685<br>Lon :  12.92178<br>Erreichen :  5<br>Finden :  3<br>Zeile :  423","Titel :  Fischrutsche<br>Lat :  52.39241<br>Lon :  13.04214<br>Erreichen :  1<br>Finden :  1<br>Zeile :  424","Titel :  Walrutsche<br>Lat :  52.39047<br>Lon :  13.04143<br>Erreichen :  1<br>Finden :  1<br>Zeile :  425","Titel :  Brücke Schafgraben<br>Lat :  52.38980<br>Lon :  13.03513<br>Erreichen :  1<br>Finden :  1<br>Zeile :  426","Titel :  Spielende Kinder<br>Lat :  52.38448<br>Lon :  13.02764<br>Erreichen :  1<br>Finden :  2<br>Zeile :  427","Titel :  Radfahrer Absteigen<br>Lat :  52.37364<br>Lon :  13.01493<br>Erreichen :  1<br>Finden :  1<br>Zeile :  428","Titel :  Buche<br>Lat :  52.36126<br>Lon :  13.00192<br>Erreichen :  1<br>Finden :  4<br>Zeile :  429","Titel :  Am Gaisberg 12a<br>Lat :  52.35895<br>Lon :  12.99679<br>Erreichen :  1<br>Finden :  1<br>Zeile :  430","Titel :  Badestelle<br>Lat :  52.35819<br>Lon :  12.99316<br>Erreichen :  1<br>Finden :  1<br>Zeile :  431","Titel :  F6.A<br>Lat :  52.35526<br>Lon :  12.98173<br>Erreichen :  3<br>Finden :  4<br>Zeile :  432","Titel :  Wentorfgraben<br>Lat :  52.35309<br>Lon :  12.98014<br>Erreichen :  1<br>Finden :  1<br>Zeile :  433","Titel :  Tussy 1 1942 stahlkörper<br>Lat :  52.34834<br>Lon :  12.98353<br>Erreichen :  1<br>Finden :  1<br>Zeile :  434","Titel :  Amselsteig<br>Lat :  52.34637<br>Lon :  12.98147<br>Erreichen :  1<br>Finden :  1<br>Zeile :  435","Titel :  Lebensgefährliche Liebe<br>Lat :  52.34348<br>Lon :  12.98055<br>Erreichen :  3<br>Finden :  2<br>Zeile :  436","Titel :  Weiß rot weiß weiß grün weiß<br>Lat :  52.34172<br>Lon :  12.98033<br>Erreichen :  1<br>Finden :  1<br>Zeile :  437","Titel :  Weg zur Havel<br>Lat :  52.34736<br>Lon :  12.98888<br>Erreichen :  1<br>Finden :  1<br>Zeile :  438","Titel :  Große Buntstifte<br>Lat :  52.34932<br>Lon :  13.00433<br>Erreichen :  1<br>Finden :  2<br>Zeile :  439","Titel :  E11 F6<br>Lat :  52.35096<br>Lon :  13.01400<br>Erreichen :  1<br>Finden :  3<br>Zeile :  440","Titel :  Wassertaxi mit Geweih<br>Lat :  52.36228<br>Lon :  13.02199<br>Erreichen :  1<br>Finden :  1<br>Zeile :  441","Titel :  Halbe Badestelle<br>Lat :  52.36476<br>Lon :  13.02620<br>Erreichen :  1<br>Finden :  1<br>Zeile :  442","Titel :  Bushaltestelle Kieskutenberg<br>Lat :  52.36591<br>Lon :  13.02956<br>Erreichen :  1<br>Finden :  1<br>Zeile :  443","Titel :  DN Nr 200<br>Lat :  52.37427<br>Lon :  13.03739<br>Erreichen :  1<br>Finden :  1<br>Zeile :  444","Titel :  Jetzt ein englisches Tor!<br>Lat :  52.38583<br>Lon :  13.04070<br>Erreichen :  1<br>Finden :  3<br>Zeile :  445","Titel :  Perspektivwechsel<br>Lat :  52.38707<br>Lon :  13.04006<br>Erreichen :  1<br>Finden :  3<br>Zeile :  446","Titel :  Chef koch<br>Lat :  52.38664<br>Lon :  13.04294<br>Erreichen :  1<br>Finden :  1<br>Zeile :  447","Titel :  Betreten der steganlagen ist unbefugten verboten<br>Lat :  52.38478<br>Lon :  13.04477<br>Erreichen :  1<br>Finden :  1<br>Zeile :  448","Titel :  Quadratur des Kreises<br>Lat :  52.38474<br>Lon :  13.04919<br>Erreichen :  1<br>Finden :  2<br>Zeile :  449","Titel :  In Vino Veritas<br>Lat :  52.38607<br>Lon :  13.05702<br>Erreichen :  1<br>Finden :  1<br>Zeile :  450","Titel :  Altstadt blick<br>Lat :  52.38987<br>Lon :  13.05836<br>Erreichen :  1<br>Finden :  1<br>Zeile :  451"],null,null,{"interactive":false,"permanent":false,"direction":"auto","opacity":1,"offset":[0,0],"textsize":"10px","textOnly":false,"className":"","sticky":true},null]},{"method":"addControlGPS","args":[{"position":"topleft","activate":true,"autoCenter":false,"maxZoom":60,"setView":true}]}],"limits":{"lat":[52.23297,52.54747],"lng":[12.715,13.263891]}},"evals":[],"jsHooks":[]}</script>
-<script type="application/htmlwidget-sizing" data-for="htmlwidget-e83603080da90c725adf">{"viewer":{"width":"100%","height":400,"padding":0,"fill":true},"browser":{"width":"100%","height":400,"padding":0,"fill":true}}</script>
+<script type="application/json" data-for="htmlwidget-de0d555ebcf127fb0777">{"x":{"options":{"crs":{"crsClass":"L.CRS.EPSG3857","code":null,"proj4def":null,"projectedBounds":null,"options":{}}},"calls":[{"method":"addTiles","args":["//{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",null,null,{"minZoom":0,"maxZoom":18,"tileSize":256,"subdomains":"abc","errorTileUrl":"","tms":false,"noWrap":false,"zoomOffset":0,"zoomReverse":false,"opacity":1,"zIndex":1,"detectRetina":false,"attribution":"&copy; <a href=\"http://openstreetmap.org\">OpenStreetMap<\/a> contributors, <a href=\"http://creativecommons.org/licenses/by-sa/2.0/\">CC-BY-SA<\/a>"}]},{"method":"addCircleMarkers","args":[[52.395675,52.392407,52.389678,52.389804,52.384476,52.3796,52.373638,52.3718217,52.365331,52.361259,52.358949,52.35779,52.358189,52.356925,52.355262,52.35309,52.35855,52.359972,52.35961,52.35893,52.359433,52.348339,52.346369,52.343479,52.341717,52.34637,52.347355,52.34883,52.349316,52.35004,52.350961,52.362279,52.364763,52.365909,52.374272,52.385833,52.387069,52.386636,52.384779,52.384744,52.386068,52.389869,52.39805],[13.044135,13.04214,13.036822,13.035134,13.027635,13.01901,13.014928,13.0139083,13.012237,13.001915,12.99679,12.99582,12.99316,12.983725,12.98173,12.980137,12.965583,12.96458,12.96727,12.96368,12.962317,12.983527,12.981468,12.980551,12.980325,12.985566,12.988881,13.00017,13.004328,13.0141,13.013999,13.021992,13.026196,13.029564,13.037387,13.040699,13.040057,13.042941,13.044774,13.049194,13.057024,13.058364,13.0487],10,null,null,{"interactive":true,"className":"","stroke":true,"color":["black","black","black","red","red","black","red","black","black","orange","red","black","orange","black","orange","red","orange","orange","orange","orange","orange","red","black","black","red","black","red","red","black","black","orange","black","orange","red","black","black","black","black","red","black","black","black","black"],"weight":5,"opacity":0.5,"fill":true,"fillColor":["black","black","black","red","red","black","red","black","black","orange","red","black","orange","black","orange","red","orange","orange","orange","orange","orange","red","black","black","red","black","red","red","black","black","orange","black","orange","red","black","black","black","black","red","black","black","black","black"],"fillOpacity":0.2},null,null,["Titel :  Reste Akropolis<br>Erreichen :  2<br>Finden :  1<br>ID :   1","Titel :  Fischrutsche<br>Erreichen :  1<br>Finden :  1<br>ID :   2","Titel :  10 m Spannweite<br>Erreichen :  2<br>Finden :  2<br>ID :   3","Titel :  Brücke Schafgraben<br>Erreichen :  1<br>Finden :  1<br>ID :   4","Titel :  Spielende Kinder<br>Erreichen :  1<br>Finden :  2<br>ID :   5","Titel :  Werkzeugkasten<br>Erreichen :  2<br>Finden :  2<br>ID :   6","Titel :  Radfahrer Absteigen<br>Erreichen :  1<br>Finden :  1<br>ID :   7","Titel :  Barcode an der Bahn<br>Erreichen :  3<br>Finden :  3<br>ID :   8","Titel :  Wassertaxi<br>Erreichen :  3<br>Finden :  3<br>ID :   9","Titel :  Buche<br>Erreichen :  1<br>Finden :  4<br>ID :  10","Titel :  Am Gaisberg 12a<br>Erreichen :  1<br>Finden :  1<br>ID :  11","Titel :  Weiße_Brücke<br>Erreichen :  3<br>Finden :  5<br>ID :  12","Titel :  Badestelle<br>Erreichen :  1<br>Finden :  1<br>ID :  13","Titel :  Eunuch<br>Erreichen :  4<br>Finden :  4<br>ID :  14","Titel :  F6.A<br>Erreichen :  3<br>Finden :  4<br>ID :  15","Titel :  Wentorfgraben<br>Erreichen :  1<br>Finden :  1<br>ID :  16","Titel :  Stonewashed Haus<br>Erreichen :  3<br>Finden :  1<br>ID :  17","Titel :  Chillstein<br>Erreichen :  3<br>Finden :  1<br>ID :  18","Titel :  Hohe_Warte_Turm<br>Erreichen :  4<br>Finden :  2<br>ID :  19","Titel :  Steinlöwen<br>Erreichen :  4<br>Finden :  2<br>ID :  20","Titel :  Gelbes Zelt<br>Erreichen :  2<br>Finden :  3<br>ID :  21","Titel :  Tussy 1 1942 stahlkörper<br>Erreichen :  1<br>Finden :  1<br>ID :  22","Titel :  Amselsteig<br>Erreichen :  1<br>Finden :  1<br>ID :  23","Titel :  Lebensgefährliche Liebe<br>Erreichen :  3<br>Finden :  2<br>ID :  24","Titel :  Weiß rot weiß weiß grün weiß<br>Erreichen :  1<br>Finden :  1<br>ID :  25","Titel :  Bartenwal<br>Erreichen :  4<br>Finden :  2<br>ID :  26","Titel :  Weg zur Havel<br>Erreichen :  1<br>Finden :  1<br>ID :  27","Titel :  Schloß<br>Erreichen :  4<br>Finden :  1<br>ID :  28","Titel :  Große Buntstifte<br>Erreichen :  1<br>Finden :  2<br>ID :  29","Titel :  Einstein Haus<br>Erreichen :  4<br>Finden :  1<br>ID :  30","Titel :  E11 F6<br>Erreichen :  1<br>Finden :  3<br>ID :  31","Titel :  Wassertaxi mit Geweih<br>Erreichen :  1<br>Finden :  1<br>ID :  32","Titel :  Halbe Badestelle<br>Erreichen :  1<br>Finden :  1<br>ID :  33","Titel :  Bushaltestelle Kieskutenberg<br>Erreichen :  1<br>Finden :  1<br>ID :  34","Titel :  DN Nr 200<br>Erreichen :  1<br>Finden :  1<br>ID :  35","Titel :  Jetzt ein englisches Tor!<br>Erreichen :  1<br>Finden :  3<br>ID :  36","Titel :  Perspektivwechsel<br>Erreichen :  1<br>Finden :  3<br>ID :  37","Titel :  Chef koch<br>Erreichen :  1<br>Finden :  1<br>ID :  38","Titel :  Betreten der steganlagen ist unbefugten verboten<br>Erreichen :  1<br>Finden :  1<br>ID :  39","Titel :  Quadratur des Kreises<br>Erreichen :  1<br>Finden :  2<br>ID :  40","Titel :  In Vino Veritas<br>Erreichen :  1<br>Finden :  1<br>ID :  41","Titel :  Altstadt blick<br>Erreichen :  1<br>Finden :  1<br>ID :  42","Titel :  Pizzabelag<br>Erreichen :  1<br>Finden :  1<br>ID :  43"],null,null,{"interactive":false,"permanent":false,"direction":"auto","opacity":1,"offset":[0,0],"textsize":"10px","textOnly":false,"className":"","sticky":true},null]},{"method":"addControlGPS","args":[{"position":"topleft","activate":true,"autoCenter":false,"maxZoom":60,"setView":true}]}],"limits":{"lat":[52.341717,52.39805],"lng":[12.962317,13.058364]}},"evals":[],"jsHooks":[]}</script>
+<script type="application/htmlwidget-sizing" data-for="htmlwidget-de0d555ebcf127fb0777">{"viewer":{"width":"100%","height":400,"padding":0,"fill":true},"browser":{"width":"100%","height":400,"padding":0,"fill":true}}</script>
 </body>
 </html>

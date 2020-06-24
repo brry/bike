@@ -15,6 +15,12 @@ p$popup <- popleaf(p, -(6:7))
 
 leaflet(p) %>% addTiles() %>% addCircleMarkers(~Lon, ~Lat, popup=~popup)
 
+# Fuer alle:
+p_route <- p
+p_route$Finden[1] <- 7 # 5 sollte ein dnkleres blau werden
+p_route$col <- classify(p_route$Finden, col=seqPal, b=TRUE, breaks=NULL, reverse=TRUE)
+leaflet(p_route) %>% addTiles() %>%
+       addCircleMarkers(~Lon, ~Lat, popup=~popup,color=~col)
 
 # Route ----
 
@@ -77,7 +83,7 @@ htmlwidgets::saveWidget(map, "index.html", selfcontained=TRUE)
 # https://stackoverflow.com/questions/42702394/make-leaflet-map-mobile-responsive
 map_h <- readLines("index.html")
 map_h <- sub('<title>leaflet</title>', x=map_h,
- '<meta name="viewport" content="width=device-width, initial-scale=1.0"/>\n<title>Bike Challenge Templiner See</title>')
+ '<meta name="viewport" content="width=device-width, initial-scale=1.0"/>\n<title>Bike Challenge</title>')
 writeLines(map_h, "index.html") ; rm(map_h)
 }
   

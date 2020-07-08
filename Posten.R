@@ -24,9 +24,21 @@ leaflet(p_route) %>% addTiles() %>%
 
 # Route ----
 
-p_route <- p[c(263,371:400,1),] # Posten Fahrlaender See
+# Posten Fahrlaender See:
+p_route <- p[c(263,371:400,1),] 
+# Posten Templiner See:
 p_route <- p[c(187,424,341,426,427,336,428,191,295,429,430,51,431,222,432,433,
-               343,418,87,4,312,434:437,361,438,50,439,82,440:451,1),] # Posten Templiner See
+               343,418,87,4,312,434:437,361,438,50,439,82,440:451,1),] 
+# Posten Zernsee:
+p_route <- p[c(452:466,417,261,27,17,79,35,141,36,142,175,292,15,260,204,3,
+               44,113,316,153,154,43,315,94,76,152),] 
+
+p_route$col <- "blue"
+leaflet(p_route) %>% addTiles() %>%
+       addCircleMarkers(p$Lon, p$Lat, popup=p$popup, col="grey") %>% 
+       addCircleMarkers(~Lon, ~Lat, popup=~popup) 
+
+
 
 # Farben fuer Kategorien  1 Photo    2 Rätsel     3 Bonus     Templiner See
 #                               B                                       B           
@@ -58,12 +70,10 @@ load("osmap.Rdata")
 ppr <- projectPoints(Lat,Lon, data=p_route, to=posm(), quiet=TRUE)
 
 {
-pdf("Templiner_Karte.pdf", width=8.27, height=11.96)
-pointsMap(Lat,Lon, data=p_route, map=osmap14, quiet=TRUE, pch=1, cex=1.5, col=p_route$col)
+pdf("Zernsee_Karte.pdf", height=8.27, width=11.96)
+pointsMap(Lat,Lon, data=p_route, map=osmap14, quiet=TRUE, pch=1, cex=1.5, 
+          col=p_route$col, x=0.55)
 text(ppr$x+70, ppr$y, p_route$ID,      cex=1,   adj=c(0,0), col=p_route$col)
-textField(1450070,6868037, "12 km")
-textField(1448250,6864745, "10 km")
-textField(1443956,6864826, "5 km")
 textField(osmap14$bbox$p1[1]+200, osmap14$bbox$p1[2]-200, "brry.github.io/bike (zoombar)", 
           adj=c(0,1))
 dev.off()
@@ -102,9 +112,10 @@ if(FALSE) { # Alles weitere beim Sourcen ignoriert
 
 # OSMtracker GPX Datei ----
 # Fuer neue Stationen
-visGPX::visGPX("2019-09-04_12-56-58.gpx", plot_static=FALSE, wp_column="name")
-wp <- plotKML::readGPX("2019-09-04_12-56-58.gpx")$waypoints
-clipr::write_clip(data.frame(wp$name,wp$ele, round(wp$lat,6),round(wp$lon,6)))
+gpxfile <- "2020-06-24_19-31-09.gpx"
+visGPX::visGPX(gpxfile, plot_static=FALSE, wp_column="name")
+wp <- plotKML::readGPX(gpxfile)$waypoints
+clipr::write_clip(data.frame(wp$name, round(wp$lat,6),round(wp$lon,6)))
 
 
 # Raetsel Templiner ----

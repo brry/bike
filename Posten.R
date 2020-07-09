@@ -9,7 +9,6 @@ library(OSMscale) # github dev version! earthDist, pointsMap, projectPoints, pos
 # Postenliste ----
 
 p <- readxl::read_excel("PORT_Posten.xls")
-p$Jahr <- as.numeric(substr(p$ID,1,nchar(p$ID)-2))
 p$Zeile <- 1:nrow(p) # Fuer Routen Auswahl
 p$popup <- popleaf(p, -(6:7))
 
@@ -19,45 +18,52 @@ leaflet(p) %>% addTiles() %>% addCircleMarkers(~Lon, ~Lat, popup=~popup)
 p_route <- p
 p_route$Finden[1] <- 7 # 5 sollte ein dnkleres blau werden
 p_route$col <- classify(p_route$Finden, col=seqPal, b=TRUE, breaks=NULL, reverse=TRUE)
-leaflet(p_route) %>% addTiles() %>%
-       addCircleMarkers(~Lon, ~Lat, popup=~popup,color=~col)
+leaflet(p_route) %>% addTiles() %>%  addCircleMarkers(~Lon, ~Lat, popup=~popup,color=~col)
+
 
 # Route ----
 
-# Posten Fahrlaender See:
-p_route <- p[c(263,371:400,1),] 
-# Posten Templiner See:
-p_route <- p[c(187,424,341,426,427,336,428,191,295,429,430,51,431,222,432,433,
-               343,418,87,4,312,434:437,361,438,50,439,82,440:451,1),] 
-# Posten Zernsee:
-p_route <- p[c(452:466,417,261,27,17,79,35,141,36,142,175,292,15,260,204,3,
-               44,113,316,153,154,43,315,94,76,152),] 
+zern <- readxl::read_excel("Zernsee_Liste.xlsx")
+p_route <- p[zern$Zeile,]
+p_route$ID <- NULL
+p_route <- cbind(ID=zern$rid, p_route)
+p_route$Erreichen <- NULL
+p_route$Finden <- NULL
+p_route$Zeile <- NULL
+p_route$Gruppe <- zern$Gruppe
+p_route$popup <- NULL
+p_route$popup <- popleaf(p_route)
+cols <- c(Foto="black",Rätsel="red",Bonus="orange",Badestelle="blue")
+p_route$col <- unname(cols[zern$Gruppe])
+rm(cols, zern)
 
-p_route$col <- "blue"
 leaflet(p_route) %>% addTiles() %>%
-       addCircleMarkers(p$Lon, p$Lat, popup=p$popup, col="grey") %>% 
-       addCircleMarkers(~Lon, ~Lat, popup=~popup) 
+      # addCircleMarkers(p$Lon, p$Lat, popup=p$popup, col="grey") %>% 
+       addCircleMarkers(~Lon, ~Lat, popup=~popup, col=~col) %>% leafem::addMouseCoordinates()
 
 
 
-# Farben fuer Kategorien  1 Photo    2 Rätsel     3 Bonus     Templiner See
-#                               B                                       B           
-gr <- c(1,1,1,2,2,1,2,1,1,3,2,1,3,1,3,2,3,3,3,3,3,2,1,1,2,1,2,2,1,1,3,1,3,2,1,1,1,1,2,1,1,1,1)
-p_route$col <- c("black","red","orange")[gr]
-rm(gr)
+
+# Futterpaket - eigene Website?
+# https://stackoverflow.com/q/62815436
+
+leaflet() %>% setView(12.94, 52.395, 16) %>% 
+     addCircleMarkers(12.94, 52.395, popup="Futter!") %>% 
+  addTiles(group = "OSM (default)", options=providerTileOptions(maxZoom=19)) %>%
+  addProviderTiles(providers$Esri.WorldImagery, group="Esri WorldImagery", 
+                   options=providerTileOptions(maxZoom=20)) %>%
+  addLayersControl(baseGroups=c("OSM (default)", "Esri WorldImagery"),
+                   options=layersControlOptions(collapsed=FALSE)) %>% 
+  addControlGPS(options=gpsOptions(position="topleft", 
+                activate=TRUE, autoCenter=FALSE, setView=TRUE))
+
 
 
 # Posten Tabelle ----
 
-p_route$ID <- 1:nrow(p_route)
-p_route$Schwere <- ceiling(rowMeans(p_route[,c("Erreichen","Finden")]))
-p_route$popup <- popleaf(p_route, c("Titel","Erreichen","Finden","ID"))
-colnames(p_route)[1] <- "Beschreibung"
 
-write.table(p_route[,c("ID","Lat","Lon","Schwere","Beschreibung")], 
-            file="Posten.txt", sep="\t", quote=FALSE, row.names=FALSE)
-
-# Manuell in Excel kopieren und dort aendern, besonders Spalte "Schwere"
+write.table(p_route[,1:5], file="Posten.txt", sep="\t", quote=FALSE, row.names=FALSE)
+# Manuell in Excel kopieren und dort ergaenzen
 
 
 # Karte PDF ----
@@ -73,7 +79,7 @@ ppr <- projectPoints(Lat,Lon, data=p_route, to=posm(), quiet=TRUE)
 pdf("Zernsee_Karte.pdf", height=8.27, width=11.96)
 pointsMap(Lat,Lon, data=p_route, map=osmap14, quiet=TRUE, pch=1, cex=1.5, 
           col=p_route$col, x=0.55)
-text(ppr$x+70, ppr$y, p_route$ID,      cex=1,   adj=c(0,0), col=p_route$col)
+textField(ppr$x+70, ppr$y, p_route$ID,      cex=1,   adj=c(0,0), col=p_route$col, fill=addAlpha("white", 0.5))
 textField(osmap14$bbox$p1[1]+200, osmap14$bbox$p1[2]-200, "brry.github.io/bike (zoombar)", 
           adj=c(0,1))
 dev.off()
@@ -83,10 +89,15 @@ dev.off()
 # Karte interaktiv ----
 
 {
-map <- leaflet(p_route) %>% addTiles() %>%
-       addCircleMarkers(~Lon, ~Lat, popup=~popup,color=~col) %>% #, stroke=F,radius=6)
-       addControlGPS(options=gpsOptions(position="topleft", 
-                     activate=TRUE, autoCenter=FALSE, maxZoom=60, setView=TRUE))
+map <- leaflet(p_route) %>% 
+    addTiles(group = "OSM (default)", options=providerTileOptions(maxZoom=19)) %>%
+    addProviderTiles(providers$Esri.WorldImagery, group="Esri WorldImagery", 
+                     options=providerTileOptions(maxZoom=20)) %>%
+    addLayersControl(baseGroups=c("OSM (default)", "Esri WorldImagery"),
+                     options=layersControlOptions(collapsed=FALSE)) %>% 
+    addCircleMarkers(~Lon, ~Lat, popup=~popup,color=~col) %>% #, stroke=F,radius=6)
+    addControlGPS(options=gpsOptions(position="topleft", 
+                  activate=TRUE, autoCenter=FALSE, maxZoom=60, setView=TRUE))
 # exportieren:
 htmlwidgets::saveWidget(map, "index.html", selfcontained=TRUE)
 # HTML head fuer mobile Geraete:
@@ -138,6 +149,24 @@ txt <- "Segeln auf der Havel - zwischen Werder (Havel) und Brandenburg an der Ha
 Verträumte und stille Nebengewässer für Kanuten - Unser Tipp: Die Wublitz bei Potsdam, "
 cat(unlist(strsplit(gsub(" ", "", txt),"")), sep="\n")
 
+
+# Posten Fahrlaender See:
+p_route <- p[c(263,371:400,1),] 
+# Posten Templiner See:
+p_route <- p[c(187,424,341,426,427,336,428,191,295,429,430,51,431,222,432,433,
+               343,418,87,4,312,434:437,361,438,50,439,82,440:451,1),] 
+# Farben fuer Kategorien  1 Photo    2 Rätsel     3 Bonus     Templiner See
+#                               B                                       B           
+gr <- c(1,1,1,2,2,1,2,1,1,3,2,1,3,1,3,2,3,3,3,3,3,2,1,1,2,1,2,2,1,1,3,1,3,2,1,1,1,1,2,1,1,1,1)
+p_route$col <- c("black","red","orange")[gr]
+rm(gr)
+
+p_route$ID <- 1:nrow(p_route)
+p_route$Schwere <- ceiling(rowMeans(p_route[,c("Erreichen","Finden")]))
+p_route$popup <- popleaf(p_route, c("Titel","Erreichen","Finden","ID"))
+colnames(p_route)[1] <- "Beschreibung"
+
+
 # Map code ----
 
 #addEasyButton(easyButton(icon="fa-crosshairs", title="Locate Me",
@@ -163,6 +192,7 @@ for(tt in unique(dupli$Titel))
 dupli[dupli$Titel==tt,"ddist"] <- OSMscale::maxEarthDist("Lat", "Lon", dupli[dupli$Titel==tt,], fun=min, each=FALSE)
 leaflet(dupli[dupli$ddist<1.5,]) %>% addTiles() %>% addCircleMarkers(~Lon, ~Lat, popup=~popup)
 
+p$Jahr <- as.numeric(substr(p$ID,1,nchar(p$ID)-2))
 p$col <- seqPal(100, b=T)[classify(p$Jahr)$index]
 
 }

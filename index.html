@@ -3904,6 +3904,866 @@ function asArray(value) {
 
 },{}]},{},[13]);
 </script>
+<script>(function (root, factory) {
+	if (typeof define === 'function' && define.amd) {
+		// AMD. Register as an anonymous module.
+		define(['leaflet'], factory);
+	} else if (typeof modules === 'object' && module.exports) {
+		// define a Common JS module that relies on 'leaflet'
+		module.exports = factory(require('leaflet'));
+	} else {
+		// Assume Leaflet is loaded into global object L already
+		factory(L);
+	}
+}(this, function (L) {
+	'use strict';
+
+	L.TileLayer.Provider = L.TileLayer.extend({
+		initialize: function (arg, options) {
+			var providers = L.TileLayer.Provider.providers;
+
+			var parts = arg.split('.');
+
+			var providerName = parts[0];
+			var variantName = parts[1];
+
+			if (!providers[providerName]) {
+				throw 'No such provider (' + providerName + ')';
+			}
+
+			var provider = {
+				url: providers[providerName].url,
+				options: providers[providerName].options
+			};
+
+			// overwrite values in provider from variant.
+			if (variantName && 'variants' in providers[providerName]) {
+				if (!(variantName in providers[providerName].variants)) {
+					throw 'No such variant of ' + providerName + ' (' + variantName + ')';
+				}
+				var variant = providers[providerName].variants[variantName];
+				var variantOptions;
+				if (typeof variant === 'string') {
+					variantOptions = {
+						variant: variant
+					};
+				} else {
+					variantOptions = variant.options;
+				}
+				provider = {
+					url: variant.url || provider.url,
+					options: L.Util.extend({}, provider.options, variantOptions)
+				};
+			}
+
+			// replace attribution placeholders with their values from toplevel provider attribution,
+			// recursively
+			var attributionReplacer = function (attr) {
+				if (attr.indexOf('{attribution.') === -1) {
+					return attr;
+				}
+				return attr.replace(/\{attribution.(\w*)\}/g,
+					function (match, attributionName) {
+						return attributionReplacer(providers[attributionName].options.attribution);
+					}
+				);
+			};
+			provider.options.attribution = attributionReplacer(provider.options.attribution);
+
+			// Compute final options combining provider options with any user overrides
+			var layerOpts = L.Util.extend({}, provider.options, options);
+			L.TileLayer.prototype.initialize.call(this, provider.url, layerOpts);
+		}
+	});
+
+	/**
+	 * Definition of providers.
+	 * see http://leafletjs.com/reference.html#tilelayer for options in the options map.
+	 */
+
+	L.TileLayer.Provider.providers = {
+		OpenStreetMap: {
+			url: '//{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+			options: {
+				maxZoom: 19,
+				attribution:
+					'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+			},
+			variants: {
+				Mapnik: {},
+				DE: {
+					url: '//{s}.tile.openstreetmap.de/tiles/osmde/{z}/{x}/{y}.png',
+					options: {
+						maxZoom: 18
+					}
+				},
+				CH: {
+					url: '//tile.osm.ch/switzerland/{z}/{x}/{y}.png',
+					options: {
+						maxZoom: 18,
+						bounds: [[45, 5], [48, 11]]
+					}
+				},
+				France: {
+					url: '//{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png',
+					options: {
+						maxZoom: 20,
+						attribution: '&copy; Openstreetmap France | {attribution.OpenStreetMap}'
+					}
+				},
+				HOT: {
+					url: '//{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+					options: {
+						attribution:
+							'{attribution.OpenStreetMap}, ' +
+							'Tiles style by <a href="https://www.hotosm.org/" target="_blank">Humanitarian OpenStreetMap Team</a> ' +
+							'hosted by <a href="https://openstreetmap.fr/" target="_blank">OpenStreetMap France</a>'
+					}
+				},
+				BZH: {
+					url: '//tile.openstreetmap.bzh/br/{z}/{x}/{y}.png',
+					options: {
+						attribution: '{attribution.OpenStreetMap}, Tiles courtesy of <a href="http://www.openstreetmap.bzh/" target="_blank">Breton OpenStreetMap Team</a>',
+						bounds: [[46.2, -5.5], [50, 0.7]]
+					}
+				}
+			}
+		},
+		OpenSeaMap: {
+			url: '//tiles.openseamap.org/seamark/{z}/{x}/{y}.png',
+			options: {
+				attribution: 'Map data: &copy; <a href="http://www.openseamap.org">OpenSeaMap</a> contributors'
+			}
+		},
+		OpenPtMap: {
+			url: 'http://openptmap.org/tiles/{z}/{x}/{y}.png',
+			options: {
+				maxZoom: 17,
+				attribution: 'Map data: &copy; <a href="http://www.openptmap.org">OpenPtMap</a> contributors'
+			}
+		},
+		OpenTopoMap: {
+			url: 'https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png',
+			options: {
+				maxZoom: 17,
+				attribution: 'Map data: {attribution.OpenStreetMap}, <a href="http://viewfinderpanoramas.org">SRTM</a> | Map style: &copy; <a href="https://opentopomap.org">OpenTopoMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
+			}
+		},
+		OpenRailwayMap: {
+			url: 'https://{s}.tiles.openrailwaymap.org/standard/{z}/{x}/{y}.png',
+			options: {
+				maxZoom: 19,
+				attribution: 'Map data: {attribution.OpenStreetMap} | Map style: &copy; <a href="https://www.OpenRailwayMap.org">OpenRailwayMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
+			}
+		},
+		OpenFireMap: {
+			url: 'http://openfiremap.org/hytiles/{z}/{x}/{y}.png',
+			options: {
+				maxZoom: 19,
+				attribution: 'Map data: {attribution.OpenStreetMap} | Map style: &copy; <a href="http://www.openfiremap.org">OpenFireMap</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
+			}
+		},
+		SafeCast: {
+			url: '//s3.amazonaws.com/te512.safecast.org/{z}/{x}/{y}.png',
+			options: {
+				maxZoom: 16,
+				attribution: 'Map data: {attribution.OpenStreetMap} | Map style: &copy; <a href="https://blog.safecast.org/about/">SafeCast</a> (<a href="https://creativecommons.org/licenses/by-sa/3.0/">CC-BY-SA</a>)'
+			}
+		},
+		Thunderforest: {
+			url: 'https://{s}.tile.thunderforest.com/{variant}/{z}/{x}/{y}.png?apikey={apikey}',
+			options: {
+				attribution:
+					'&copy; <a href="http://www.thunderforest.com/">Thunderforest</a>, {attribution.OpenStreetMap}',
+				variant: 'cycle',
+				apikey: '<insert your api key here>',
+				maxZoom: 22
+			},
+			variants: {
+				OpenCycleMap: 'cycle',
+				Transport: {
+					options: {
+						variant: 'transport'
+					}
+				},
+				TransportDark: {
+					options: {
+						variant: 'transport-dark'
+					}
+				},
+				SpinalMap: {
+					options: {
+						variant: 'spinal-map'
+					}
+				},
+				Landscape: 'landscape',
+				Outdoors: 'outdoors',
+				Pioneer: 'pioneer',
+				MobileAtlas: 'mobile-atlas',
+				Neighbourhood: 'neighbourhood'
+			}
+		},
+		OpenMapSurfer: {
+			url: 'https://maps.heigit.org/openmapsurfer/tiles/{variant}/webmercator/{z}/{x}/{y}.png',
+			options: {
+				maxZoom: 19,
+				variant: 'roads',
+				attribution: 'Imagery from <a href="http://giscience.uni-hd.de/">GIScience Research Group @ University of Heidelberg</a> | Map data '
+			},
+			variants: {
+				Roads: {
+					options: {
+						variant: 'roads',
+						attribution: '{attribution.OpenMapSurfer}{attribution.OpenStreetMap}'
+					}
+				},
+				Hybrid: {
+					options: {
+						variant: 'hybrid',
+						attribution: '{attribution.OpenMapSurfer}{attribution.OpenStreetMap}'
+					}
+				},
+				AdminBounds: {
+					options: {
+						variant: 'adminb',
+						maxZoom: 18,
+						attribution: '{attribution.OpenMapSurfer}{attribution.OpenStreetMap}'
+					}
+				},
+				ContourLines: {
+					options: {
+						variant: 'asterc',
+						maxZoom: 18,
+						minZoom: 13,
+						attribution: '{attribution.OpenMapSurfer} <a href="https://lpdaac.usgs.gov/products/aster_policies">ASTER GDEM</a>'
+					}
+				},
+				Hillshade: {
+					options: {
+						variant: 'asterh',
+						maxZoom: 18,
+						attribution: '{attribution.OpenMapSurfer} <a href="https://lpdaac.usgs.gov/products/aster_policies">ASTER GDEM</a>, <a href="http://srtm.csi.cgiar.org/">SRTM</a>'
+					}
+				},
+				ElementsAtRisk: {
+					options: {
+						variant: 'elements_at_risk',
+						attribution: '{attribution.OpenMapSurfer}{attribution.OpenStreetMap}'
+					}
+				}
+			}
+		},
+		Hydda: {
+			url: '//{s}.tile.openstreetmap.se/hydda/{variant}/{z}/{x}/{y}.png',
+			options: {
+				maxZoom: 18,
+				variant: 'full',
+				attribution: 'Tiles courtesy of <a href="http://openstreetmap.se/" target="_blank">OpenStreetMap Sweden</a> &mdash; Map data {attribution.OpenStreetMap}'
+			},
+			variants: {
+				Full: 'full',
+				Base: 'base',
+				RoadsAndLabels: 'roads_and_labels'
+			}
+		},
+		MapBox: {
+			url: 'https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}{r}.png?access_token={accessToken}',
+			options: {
+				attribution:
+					'<a href="https://www.mapbox.com/about/maps/" target="_blank">&copy; Mapbox</a> ' +
+					'{attribution.OpenStreetMap} ' +
+					'<a href="https://www.mapbox.com/map-feedback/" target="_blank">Improve this map</a>',
+				subdomains: 'abcd',
+				id: 'mapbox.streets',
+				accessToken: '<insert your access token here>',
+			}
+		},
+		Stamen: {
+			url: '//stamen-tiles-{s}.a.ssl.fastly.net/{variant}/{z}/{x}/{y}{r}.{ext}',
+			options: {
+				attribution:
+					'Map tiles by <a href="http://stamen.com">Stamen Design</a>, ' +
+					'<a href="http://creativecommons.org/licenses/by/3.0">CC BY 3.0</a> &mdash; ' +
+					'Map data {attribution.OpenStreetMap}',
+				subdomains: 'abcd',
+				minZoom: 0,
+				maxZoom: 20,
+				variant: 'toner',
+				ext: 'png'
+			},
+			variants: {
+				Toner: 'toner',
+				TonerBackground: 'toner-background',
+				TonerHybrid: 'toner-hybrid',
+				TonerLines: 'toner-lines',
+				TonerLabels: 'toner-labels',
+				TonerLite: 'toner-lite',
+				Watercolor: {
+					url: '//stamen-tiles-{s}.a.ssl.fastly.net/{variant}/{z}/{x}/{y}.{ext}',
+					options: {
+						variant: 'watercolor',
+						ext: 'jpg',
+						minZoom: 1,
+						maxZoom: 16
+					}
+				},
+				Terrain: {
+					options: {
+						variant: 'terrain',
+						minZoom: 0,
+						maxZoom: 18
+					}
+				},
+				TerrainBackground: {
+					options: {
+						variant: 'terrain-background',
+						minZoom: 0,
+						maxZoom: 18
+					}
+				},
+				TerrainLabels: {
+					options: {
+						variant: 'terrain-labels',
+						minZoom: 0,
+						maxZoom: 18
+					}
+				},
+				TopOSMRelief: {
+					url: '//stamen-tiles-{s}.a.ssl.fastly.net/{variant}/{z}/{x}/{y}.{ext}',
+					options: {
+						variant: 'toposm-color-relief',
+						ext: 'jpg',
+						bounds: [[22, -132], [51, -56]]
+					}
+				},
+				TopOSMFeatures: {
+					options: {
+						variant: 'toposm-features',
+						bounds: [[22, -132], [51, -56]],
+						opacity: 0.9
+					}
+				}
+			}
+		},
+		TomTom: {
+			url: 'https://{s}.api.tomtom.com/map/1/tile/{variant}/{style}/{z}/{x}/{y}.{ext}?key={apikey}',
+			options: {
+				variant: 'basic',
+				maxZoom: 22,
+				attribution:
+					'<a href="https://tomtom.com" target="_blank">&copy;  1992 - ' + new Date().getFullYear() + ' TomTom.</a> ',
+				subdomains: 'abcd',
+				style: 'main',
+				ext: 'png',
+				apikey: '<insert your API key here>',
+			},
+			variants: {
+				Basic: 'basic',
+				Hybrid: 'hybrid',
+				Labels: 'labels'
+			}
+		},
+		Esri: {
+			url: '//server.arcgisonline.com/ArcGIS/rest/services/{variant}/MapServer/tile/{z}/{y}/{x}',
+			options: {
+				variant: 'World_Street_Map',
+				attribution: 'Tiles &copy; Esri'
+			},
+			variants: {
+				WorldStreetMap: {
+					options: {
+						attribution:
+							'{attribution.Esri} &mdash; ' +
+							'Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom, 2012'
+					}
+				},
+				DeLorme: {
+					options: {
+						variant: 'Specialty/DeLorme_World_Base_Map',
+						minZoom: 1,
+						maxZoom: 11,
+						attribution: '{attribution.Esri} &mdash; Copyright: &copy;2012 DeLorme'
+					}
+				},
+				WorldTopoMap: {
+					options: {
+						variant: 'World_Topo_Map',
+						attribution:
+							'{attribution.Esri} &mdash; ' +
+							'Esri, DeLorme, NAVTEQ, TomTom, Intermap, iPC, USGS, FAO, NPS, NRCAN, GeoBase, Kadaster NL, Ordnance Survey, Esri Japan, METI, Esri China (Hong Kong), and the GIS User Community'
+					}
+				},
+				WorldImagery: {
+					options: {
+						variant: 'World_Imagery',
+						attribution:
+							'{attribution.Esri} &mdash; ' +
+							'Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+					}
+				},
+				WorldTerrain: {
+					options: {
+						variant: 'World_Terrain_Base',
+						maxZoom: 13,
+						attribution:
+							'{attribution.Esri} &mdash; ' +
+							'Source: USGS, Esri, TANA, DeLorme, and NPS'
+					}
+				},
+				WorldShadedRelief: {
+					options: {
+						variant: 'World_Shaded_Relief',
+						maxZoom: 13,
+						attribution: '{attribution.Esri} &mdash; Source: Esri'
+					}
+				},
+				WorldPhysical: {
+					options: {
+						variant: 'World_Physical_Map',
+						maxZoom: 8,
+						attribution: '{attribution.Esri} &mdash; Source: US National Park Service'
+					}
+				},
+				OceanBasemap: {
+					options: {
+						variant: 'Ocean_Basemap',
+						maxZoom: 13,
+						attribution: '{attribution.Esri} &mdash; Sources: GEBCO, NOAA, CHS, OSU, UNH, CSUMB, National Geographic, DeLorme, NAVTEQ, and Esri'
+					}
+				},
+				NatGeoWorldMap: {
+					options: {
+						variant: 'NatGeo_World_Map',
+						maxZoom: 16,
+						attribution: '{attribution.Esri} &mdash; National Geographic, Esri, DeLorme, NAVTEQ, UNEP-WCMC, USGS, NASA, ESA, METI, NRCAN, GEBCO, NOAA, iPC'
+					}
+				},
+				WorldGrayCanvas: {
+					options: {
+						variant: 'Canvas/World_Light_Gray_Base',
+						maxZoom: 16,
+						attribution: '{attribution.Esri} &mdash; Esri, DeLorme, NAVTEQ'
+					}
+				}
+			}
+		},
+		OpenWeatherMap: {
+			url: 'http://{s}.tile.openweathermap.org/map/{variant}/{z}/{x}/{y}.png?appid={apiKey}',
+			options: {
+				maxZoom: 19,
+				attribution: 'Map data &copy; <a href="http://openweathermap.org">OpenWeatherMap</a>',
+				apiKey:'<insert your api key here>',
+				opacity: 0.5
+			},
+			variants: {
+				Clouds: 'clouds',
+				CloudsClassic: 'clouds_cls',
+				Precipitation: 'precipitation',
+				PrecipitationClassic: 'precipitation_cls',
+				Rain: 'rain',
+				RainClassic: 'rain_cls',
+				Pressure: 'pressure',
+				PressureContour: 'pressure_cntr',
+				Wind: 'wind',
+				Temperature: 'temp',
+				Snow: 'snow'
+			}
+		},
+		HERE: {
+			/*
+			 * HERE maps, formerly Nokia maps.
+			 * These basemaps are free, but you need an API key. Please sign up at
+			 * https://developer.here.com/plans
+			 */
+			url:
+				'https://{s}.{base}.maps.api.here.com/maptile/2.1/' +
+				'{type}/{mapID}/{variant}/{z}/{x}/{y}/{size}/{format}?' +
+				'app_id={app_id}&app_code={app_code}&lg={language}',
+			options: {
+				attribution:
+					'Map &copy; 1987-' + new Date().getFullYear() + ' <a href="http://developer.here.com">HERE</a>',
+				subdomains: '1234',
+				mapID: 'newest',
+				'app_id': '<insert your app_id here>',
+				'app_code': '<insert your app_code here>',
+				base: 'base',
+				variant: 'normal.day',
+				maxZoom: 20,
+				type: 'maptile',
+				language: 'eng',
+				format: 'png8',
+				size: '256'
+			},
+			variants: {
+				normalDay: 'normal.day',
+				normalDayCustom: 'normal.day.custom',
+				normalDayGrey: 'normal.day.grey',
+				normalDayMobile: 'normal.day.mobile',
+				normalDayGreyMobile: 'normal.day.grey.mobile',
+				normalDayTransit: 'normal.day.transit',
+				normalDayTransitMobile: 'normal.day.transit.mobile',
+				normalDayTraffic: {
+					options: {
+						variant: 'normal.traffic.day',
+						base: 'traffic',
+						type: 'traffictile'
+					}
+				},
+				normalNight: 'normal.night',
+				normalNightMobile: 'normal.night.mobile',
+				normalNightGrey: 'normal.night.grey',
+				normalNightGreyMobile: 'normal.night.grey.mobile',
+				normalNightTransit: 'normal.night.transit',
+				normalNightTransitMobile: 'normal.night.transit.mobile',
+				reducedDay: 'reduced.day',
+				reducedNight: 'reduced.night',
+				basicMap: {
+					options: {
+						type: 'basetile'
+					}
+				},
+				mapLabels: {
+					options: {
+						type: 'labeltile',
+						format: 'png'
+					}
+				},
+				trafficFlow: {
+					options: {
+						base: 'traffic',
+						type: 'flowtile'
+					}
+				},
+				carnavDayGrey: 'carnav.day.grey',
+				hybridDay: {
+					options: {
+						base: 'aerial',
+						variant: 'hybrid.day'
+					}
+				},
+				hybridDayMobile: {
+					options: {
+						base: 'aerial',
+						variant: 'hybrid.day.mobile'
+					}
+				},
+				hybridDayTransit: {
+					options: {
+						base: 'aerial',
+						variant: 'hybrid.day.transit'
+					}
+				},
+				hybridDayGrey: {
+					options: {
+						base: 'aerial',
+						variant: 'hybrid.grey.day'
+					}
+				},
+				hybridDayTraffic: {
+					options: {
+						variant: 'hybrid.traffic.day',
+						base: 'traffic',
+						type: 'traffictile'
+					}
+				},
+				pedestrianDay: 'pedestrian.day',
+				pedestrianNight: 'pedestrian.night',
+				satelliteDay: {
+					options: {
+						base: 'aerial',
+						variant: 'satellite.day'
+					}
+				},
+				terrainDay: {
+					options: {
+						base: 'aerial',
+						variant: 'terrain.day'
+					}
+				},
+				terrainDayMobile: {
+					options: {
+						base: 'aerial',
+						variant: 'terrain.day.mobile'
+					}
+				}
+			}
+		},
+		FreeMapSK: {
+			url: 'http://t{s}.freemap.sk/T/{z}/{x}/{y}.jpeg',
+			options: {
+				minZoom: 8,
+				maxZoom: 16,
+				subdomains: '1234',
+				bounds: [[47.204642, 15.996093], [49.830896, 22.576904]],
+				attribution:
+					'{attribution.OpenStreetMap}, vizualization CC-By-SA 2.0 <a href="http://freemap.sk">Freemap.sk</a>'
+			}
+		},
+		MtbMap: {
+			url: 'http://tile.mtbmap.cz/mtbmap_tiles/{z}/{x}/{y}.png',
+			options: {
+				attribution:
+					'{attribution.OpenStreetMap} &amp; USGS'
+			}
+		},
+		CartoDB: {
+			url: 'https://{s}.basemaps.cartocdn.com/{variant}/{z}/{x}/{y}{r}.png',
+			options: {
+				attribution: '{attribution.OpenStreetMap} &copy; <a href="https://carto.com/attributions">CARTO</a>',
+				subdomains: 'abcd',
+				maxZoom: 19,
+				variant: 'light_all'
+			},
+			variants: {
+				Positron: 'light_all',
+				PositronNoLabels: 'light_nolabels',
+				PositronOnlyLabels: 'light_only_labels',
+				DarkMatter: 'dark_all',
+				DarkMatterNoLabels: 'dark_nolabels',
+				DarkMatterOnlyLabels: 'dark_only_labels',
+				Voyager: 'rastertiles/voyager',
+				VoyagerNoLabels: 'rastertiles/voyager_nolabels',
+				VoyagerOnlyLabels: 'rastertiles/voyager_only_labels',
+				VoyagerLabelsUnder: 'rastertiles/voyager_labels_under'
+			}
+		},
+		HikeBike: {
+			url: 'https://tiles.wmflabs.org/{variant}/{z}/{x}/{y}.png',
+			options: {
+				maxZoom: 19,
+				attribution: '{attribution.OpenStreetMap}',
+				variant: 'hikebike'
+			},
+			variants: {
+				HikeBike: {},
+				HillShading: {
+					options: {
+						maxZoom: 15,
+						variant: 'hillshading'
+					}
+				}
+			}
+		},
+		BasemapAT: {
+			url: '//maps{s}.wien.gv.at/basemap/{variant}/normal/google3857/{z}/{y}/{x}.{format}',
+			options: {
+				maxZoom: 19,
+				attribution: 'Datenquelle: <a href="https://www.basemap.at">basemap.at</a>',
+				subdomains: ['', '1', '2', '3', '4'],
+				format: 'png',
+				bounds: [[46.358770, 8.782379], [49.037872, 17.189532]],
+				variant: 'geolandbasemap'
+			},
+			variants: {
+				basemap: {
+					options: {
+						maxZoom: 20, // currently only in Vienna
+						variant: 'geolandbasemap'
+					}
+				},
+				grau: 'bmapgrau',
+				overlay: 'bmapoverlay',
+				highdpi: {
+					options: {
+						variant: 'bmaphidpi',
+						format: 'jpeg'
+					}
+				},
+				orthofoto: {
+					options: {
+						maxZoom: 20, // currently only in Vienna
+						variant: 'bmaporthofoto30cm',
+						format: 'jpeg'
+					}
+				}
+			}
+		},
+		nlmaps: {
+			url: '//geodata.nationaalgeoregister.nl/tiles/service/wmts/{variant}/EPSG:3857/{z}/{x}/{y}.png',
+			options: {
+				minZoom: 6,
+				maxZoom: 19,
+				bounds: [[50.5, 3.25], [54, 7.6]],
+				attribution: 'Kaartgegevens &copy; <a href="kadaster.nl">Kadaster</a>'
+			},
+			variants: {
+				'standaard': 'brtachtergrondkaart',
+				'pastel': 'brtachtergrondkaartpastel',
+				'grijs': 'brtachtergrondkaartgrijs',
+				'luchtfoto': {
+					'url': '//geodata.nationaalgeoregister.nl/luchtfoto/rgb/wmts/1.0.0/2016_ortho25/EPSG:3857/{z}/{x}/{y}.png',
+				}
+			}
+		},
+		NASAGIBS: {
+			url: 'https://map1.vis.earthdata.nasa.gov/wmts-webmerc/{variant}/default/{time}/{tilematrixset}{maxZoom}/{z}/{y}/{x}.{format}',
+			options: {
+				attribution:
+					'Imagery provided by services from the Global Imagery Browse Services (GIBS), operated by the NASA/GSFC/Earth Science Data and Information System ' +
+					'(<a href="https://earthdata.nasa.gov">ESDIS</a>) with funding provided by NASA/HQ.',
+				bounds: [[-85.0511287776, -179.999999975], [85.0511287776, 179.999999975]],
+				minZoom: 1,
+				maxZoom: 9,
+				format: 'jpg',
+				time: '',
+				tilematrixset: 'GoogleMapsCompatible_Level'
+			},
+			variants: {
+				ModisTerraTrueColorCR: 'MODIS_Terra_CorrectedReflectance_TrueColor',
+				ModisTerraBands367CR: 'MODIS_Terra_CorrectedReflectance_Bands367',
+				ViirsEarthAtNight2012: {
+					options: {
+						variant: 'VIIRS_CityLights_2012',
+						maxZoom: 8
+					}
+				},
+				ModisTerraLSTDay: {
+					options: {
+						variant: 'MODIS_Terra_Land_Surface_Temp_Day',
+						format: 'png',
+						maxZoom: 7,
+						opacity: 0.75
+					}
+				},
+				ModisTerraSnowCover: {
+					options: {
+						variant: 'MODIS_Terra_Snow_Cover',
+						format: 'png',
+						maxZoom: 8,
+						opacity: 0.75
+					}
+				},
+				ModisTerraAOD: {
+					options: {
+						variant: 'MODIS_Terra_Aerosol',
+						format: 'png',
+						maxZoom: 6,
+						opacity: 0.75
+					}
+				},
+				ModisTerraChlorophyll: {
+					options: {
+						variant: 'MODIS_Terra_Chlorophyll_A',
+						format: 'png',
+						maxZoom: 7,
+						opacity: 0.75
+					}
+				}
+			}
+		},
+		NLS: {
+			// NLS maps are copyright National library of Scotland.
+			// http://maps.nls.uk/projects/api/index.html
+			// Please contact NLS for anything other than non-commercial low volume usage
+			//
+			// Map sources: Ordnance Survey 1:1m to 1:63K, 1920s-1940s
+			//   z0-9  - 1:1m
+			//  z10-11 - quarter inch (1:253440)
+			//  z12-18 - one inch (1:63360)
+			url: '//nls-{s}.tileserver.com/nls/{z}/{x}/{y}.jpg',
+			options: {
+				attribution: '<a href="http://geo.nls.uk/maps/">National Library of Scotland Historic Maps</a>',
+				bounds: [[49.6, -12], [61.7, 3]],
+				minZoom: 1,
+				maxZoom: 18,
+				subdomains: '0123',
+			}
+		},
+		JusticeMap: {
+			// Justice Map (http://www.justicemap.org/)
+			// Visualize race and income data for your community, county and country.
+			// Includes tools for data journalists, bloggers and community activists.
+			url: 'http://www.justicemap.org/tile/{size}/{variant}/{z}/{x}/{y}.png',
+			options: {
+				attribution: '<a href="http://www.justicemap.org/terms.php">Justice Map</a>',
+				// one of 'county', 'tract', 'block'
+				size: 'county',
+				// Bounds for USA, including Alaska and Hawaii
+				bounds: [[14, -180], [72, -56]]
+			},
+			variants: {
+				income: 'income',
+				americanIndian: 'indian',
+				asian: 'asian',
+				black: 'black',
+				hispanic: 'hispanic',
+				multi: 'multi',
+				nonWhite: 'nonwhite',
+				white: 'white',
+				plurality: 'plural'
+			}
+		},
+		Wikimedia: {
+			url: 'https://maps.wikimedia.org/osm-intl/{z}/{x}/{y}{r}.png',
+			options: {
+				attribution: '<a href="https://wikimediafoundation.org/wiki/Maps_Terms_of_Use">Wikimedia</a>',
+				minZoom: 1,
+				maxZoom: 19
+			}
+		},
+		GeoportailFrance: {
+			url: 'https://wxs.ign.fr/{apikey}/geoportail/wmts?REQUEST=GetTile&SERVICE=WMTS&VERSION=1.0.0&STYLE={style}&TILEMATRIXSET=PM&FORMAT={format}&LAYER={variant}&TILEMATRIX={z}&TILEROW={y}&TILECOL={x}',
+			options: {
+				attribution: '<a target="_blank" href="https://www.geoportail.gouv.fr/">Geoportail France</a>',
+				bounds: [[-75, -180], [81, 180]],
+				minZoom: 2,
+				maxZoom: 18,
+				// Get your own geoportail apikey here : http://professionnels.ign.fr/ign/contrats/
+				// NB : 'choisirgeoportail' is a demonstration key that comes with no guarantee
+				apikey: 'choisirgeoportail',
+				format: 'image/jpeg',
+				style : 'normal',
+				variant: 'GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN-EXPRESS.STANDARD'
+			},
+			variants: {
+				parcels: {
+					options : {
+						variant: 'CADASTRALPARCELS.PARCELS',
+						maxZoom: 20,
+						style : 'bdparcellaire',
+						format: 'image/png'
+					}
+				},
+				ignMaps: 'GEOGRAPHICALGRIDSYSTEMS.MAPS',
+				maps: 'GEOGRAPHICALGRIDSYSTEMS.MAPS.SCAN-EXPRESS.STANDARD',
+				orthos: {
+					options: {
+						maxZoom: 19,
+						variant: 'ORTHOIMAGERY.ORTHOPHOTOS'
+					}
+				}
+			}
+		},
+		OneMapSG: {
+			url: '//maps-{s}.onemap.sg/v3/{variant}/{z}/{x}/{y}.png',
+			options: {
+				variant: 'Default',
+				minZoom: 11,
+				maxZoom: 18,
+				bounds: [[1.56073, 104.11475], [1.16, 103.502]],
+				attribution: '<img src="https://docs.onemap.sg/maps/images/oneMap64-01.png" style="height:20px;width:20px;"/> New OneMap | Map data &copy; contributors, <a href="http://SLA.gov.sg">Singapore Land Authority</a>'
+			},
+			variants: {
+				Default: 'Default',
+				Night: 'Night',
+				Original: 'Original',
+				Grey: 'Grey',
+				LandLot: 'LandLot'
+			}
+		}
+	};
+
+	L.tileLayer.provider = function (provider, options) {
+		return new L.TileLayer.Provider(provider, options);
+	};
+
+	return L;
+}));
+</script>
+<script>LeafletWidget.methods.addProviderTiles = function(provider, layerId, group, options) {
+  this.layerManager.addLayer(L.tileLayer.provider(provider, options), "tile", layerId, group);
+};
+</script>
 <style type="text/css">
 .leaflet-container .leaflet-control-gps{position:relative;float:left;background:#fff;color:#1978cf;-moz-border-radius:4px;-webkit-border-radius:4px;border-radius:4px;background-color:rgba(255,255,255,.8);z-index:1000;box-shadow:0 1px 7px rgba(0,0,0,.65);margin-left:10px;margin-top:10px}.leaflet-control-gps .gps-button{display:block;float:left;width:26px;height:26px;background-image:url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABgAAABRCAYAAADIIGZcAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAAPEQAADxEBjCLTXgAAABl0RVh0U29mdHdhcmUAd3d3Lmlua3NjYXBlLm9yZ5vuPBoAAAeeSURBVFiF7Zl9kFVlHcc/v3OPu7qLwBpLSYDYCyVWGqg1kFqpMWrN5KRomrGAXbjntjM5EEjUMGNZ2W7BtHvPhRutQ75lS1QMDqUkmDnmyzYlzUCEL6RE7V1XCi4ueu/99cfz3OW+nLN7rts/Nf1mzuzd5+X7fV5+z+/leURViSoi0gGMV9WlkTup6qgf4ADnAHuBw8AHADdS31GAPwP8BjgKaNV3HHgCWFw3AdAC3GOBjgA7gNuBPcBLwFeBbUDWttkOnBmJAJgLvGw73gO0lNXtBvaV/d8MdANF4BVg/ogEwBnA34BB4JoA8gqCsvKPA4dsvykjEdxrR74gZOniwOqQuo/amTwYSAB82oL/NIp2hJCkLEZbEMFDQA546xgIxgF/B54OIngFeOzNgpfh9AIngAZVxQEQkRl2g/vCj2Rk6QMagPMABFgD3AjMAvYB/7ANt6rq96MgisgNQMl8tFjwvwAPusDbgYm28vSyfhOJLq3A2+zvJvt3PDCptG4zMbv/7f/AHnzJYn1keA/sdI4Cc+oYdZjMAQrA74EKLXoUeBUYN4bRu8DzwLOlMqeM+S7MuneMYfRrgLOBnuGSqhHswKzf5SEjvA64OaTug8DrwOOAE2aLpmLM8yFgbgDILmBvQPn7gf0YHzEz0BZV2aSjdqO+hT2Rtm43lebaAVZhTu4QsLAGL2S6M4BH7HIdADKYg9QHvAAswviBP9k2zwDnBmKNoBECfBGjwtXusvS9aDc21D9HVb8zgE9gVDALXA1MjtJXLEAkEZFNGN97deQ+9RBYEtE6OtVNUK84ozf5XyLwff/CdDp9cT193PrGw52qOgkTm0aSETe5t7e3YWBg4IpisXiRiFwIXA7EgEdU9WnHcZ7K5XIPr1ixIlc3QXd39wUisllEZtminIjkVfUU4A1ggi1/EVjsed6uIJyaPejt7W1Ip9NfdxznCRE5S0SWx2Kxc7PZ7HhV/QPwkud5LcC7gWWqOh74dSqV6u7s7GyuxqvZg2w2ey9wrYg8ns/nF7a3tz9XqvN9v/RTPc87ABzIZDLb8vn8D0Uk2dTUNBOYj7FTtTPwff964Frggf7+/kvKwa0MYvzFsMTj8cOe512lql3AFb7vxwOXaMOGDZMxJviwiCTWrl1brJ5dY2PjLa7rfrK6HKC5uXklJq7qSKVSZ9UQFIvF24FJqhpPJBKvBoEsWbJkMB6PDwTVtbW1DalqG9AkInfWEACXAn9OJpPbgwCiSDKZfBL4LfCxCgLf98dhfOmYY1OLMTmTyUwHkI0bN07P5/MLMOHKD4CtAI7j7Fm2bNmhKKDpdLqlUChc5DiO2NGvBO4QkbvdfD7/c0zIAfAF+1EsFncAV0UhKBaL33UcZ1FV8RpV/byrqjeo6nWO43xDRO7CZI8UCoWnooAD5PP51a7r/sJxHFHVS4BbVbVDVXtEVenp6Tl9aGjoCHC/53mfiwocJL7vdwLLVXVGMpk86AAsXrz4KCZwmj0WcCuzgf5kMnkQKtX0MeCc7u7u+W8WOZVKzQYuxgTSVBC4rrtWVQcdx9mUyWQmBAF0dXWNX79+fWBi0tXV1Sgim4ETInJbDUE8Hj/sOE47MLVQKHRhAq8KicViP2poaNgWRBCLxe4A3gesTCQSz9cQACQSifuALap6cyqV2lk6LGUyEZhcNfJW3/e3AsuBnZ7npcvra8x1a2vrTQMDA/uBVfl8fo/v+6tF5Jflo7LAU13XvSwWi30HmCwi6Vwu92XKTDWM4NHS6fSHVXUzJn8Dk/2gqg0ikiubycvAEs/zHgrCGdEnr1u37rTGxsYrVfUCEZmDMQMxjJb0Ac8UCoUd7e3t/wrDqCuy831/JzDF87xZoza2UlfYoqprYrFYjd8dSf4fm/6XEYjIJhHZUhdDxBxtAuYMPAf0Y/K1t0TqO0qWmcT4iSLBWeYLwFeAWF0EwDTgYQtyEHOP4XEyT74Fkzvvt22eBN4TiQDj6I9gMv1O4NSyut1UZvou5hb4dcw1wmdHJADOxMSfh4B5AeRhdxXn2dkcA945EsE2O+WaK2JbvwBIhNTNweQNu7EWooIAuMmC90TRjhCSb1qMZKls2BaJyC47iumqWhGi2wbvxVwhuMCvMMlIVRNpxNxtDKrq+cPnwKrkPzG5V+3oYInCCQW1X0HhtpBZ3GeX6rThJcKkQwp0BIBPV3itDLyc5PwAguUWa25pddZbrVH7d5/9vmYJFgaAl75VFmQp5vllL+bcKOYO+27XqtYxu4zHsb4XKLnBQs1+nJRS3WucTK1KDuY4MFia1jtsxfcClmiKwrGA0b+hAbdcmNBdgQ9Vq+kg8GjIJl9fRXJCwQvZ5AcwJ7uxmmCnXarWEJJpVpuWKrwrBLwJ80TTF3TQrrFT+/EYDtp6i7EozFTcbxvUPBCVacutIXXz7KbvqCivajQJ836QBa4MANlN8CvUPKueR4CpoQS28aWWRIFNmLfLQALgVIxJL1jwT9XghUx3ErDFkmSBn2E81x+BvwIrgJ/YDVWMc5oWiDXKpt2IyXxy1LrLIeB3QIIy81wXQRlRDHPLtQ9jAuYAp0TpGyk2VdUC8KyIbMc8JUa+Efg3RFnZcW5a8CsAAAAASUVORK5CYII=);background-repeat:no-repeat;background-position:1px 1px;background-color:#fff;border-radius:4px}.leaflet-control-gps .gps-button.active:hover,.leaflet-control-gps .gps-button:hover{background-color:#f4f4f4}.leaflet-control-gps .gps-button.disabled,.leaflet-control-gps .gps-button.loading,.leaflet-control-gps .gps-button.loading:hover{background-position:1px -28px}.leaflet-control-gps .gps-button.active{background-position:1px -56px}.leaflet-control-gps .gps-alert{position:absolute;left:26px;bottom:-1px;width:220px;padding:2px;line-height:.95em;color:#e00;border:1px solid #888;background-color:rgba(255,255,255,.75);border-radius:4px}
 </style>
@@ -3915,11 +4775,11 @@ function asArray(value) {
 </head>
 <body style="background-color: white;">
 <div id="htmlwidget_container">
-<div id="htmlwidget-9cbf807cba4a76ee1bb9" class="leaflet html-widget" style="width:100%;height:400px;">
+<div id="htmlwidget-b1977f5fcd1d5f073247" class="leaflet html-widget" style="width:100%;height:400px;">
 
 </div>
 </div>
-<script type="application/json" data-for="htmlwidget-9cbf807cba4a76ee1bb9">{"x":{"options":{"crs":{"crsClass":"L.CRS.EPSG3857","code":null,"proj4def":null,"projectedBounds":null,"options":{}}},"calls":[{"method":"addTiles","args":["//{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",null,null,{"minZoom":0,"maxZoom":18,"tileSize":256,"subdomains":"abc","errorTileUrl":"","tms":false,"noWrap":false,"zoomOffset":0,"zoomReverse":false,"opacity":1,"zIndex":1,"detectRetina":false,"attribution":"&copy; <a href=\"http://openstreetmap.org\">OpenStreetMap<\/a> contributors, <a href=\"http://creativecommons.org/licenses/by-sa/2.0/\">CC-BY-SA<\/a>"}]},{"method":"addCircleMarkers","args":[[52.390937,52.388787,52.380089,52.379904,52.380523,52.380172,52.383189,52.385176,52.391561,52.388361,52.383703,52.392882,52.393065,52.411267,52.395574,52.405393,52.400305,52.40993,52.41187,52.41228,52.41522,52.415278,52.41961,52.423233,52.4248022313357,52.407721,52.4067,52.404745,52.425228,52.41803,52.3932,52.392083,52.3912183,52.3906312076997,52.3929976038969,52.38678,52.3882167,52.38767,52.39143,52.3993999714743],[13.036936,13.032416,13.021519,13.018781,13.017778,13.015249,13.008745,13.001401,12.997148,12.999826,13.026742,13.045007,13.044873,12.943781,12.939991,13.040484,13.010669,13.00995,13.00569,13.00659,13.01291,12.990367,13.0019,12.979943,12.96788555411,12.96158,12.96244,12.96098,12.938539,12.93506,12.93882,12.930485,12.949145,12.9550591042995,12.9607539388517,12.9532,12.96477,12.9647,12.98573,12.9745426941132],10,null,null,{"interactive":true,"className":"","stroke":true,"color":["blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue"],"weight":5,"opacity":0.5,"fill":true,"fillColor":["blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue","blue"],"fillOpacity":0.2},null,null,["Titel :  Bugatti - vorher existenz prüfen<br>Lat :  52.39094<br>Lon :  13.03694<br>Erreichen :  1<br>Finden :  1<br>Zeile :  452","Titel :  311BGron1927 Arnhem<br>Lat :  52.38879<br>Lon :  13.03242<br>Erreichen :  1<br>Finden :  2<br>Zeile :  453","Titel :  Stammkreis<br>Lat :  52.38009<br>Lon :  13.02152<br>Erreichen :  1<br>Finden :  1<br>Zeile :  454","Titel :  Olympische Statuen<br>Lat :  52.37990<br>Lon :  13.01878<br>Erreichen :  1<br>Finden :  1<br>Zeile :  455","Titel :  Rätsel walk of fame<br>Lat :  52.38052<br>Lon :  13.01778<br>Erreichen :  1<br>Finden :  1<br>Zeile :  456","Titel :  Franzosen und Russen gehört das Land, das Meer gehört den Briten. Wir aber besitzen im Luftreich des Traums die Herrschaft unbestritten. Heinrich Heine<br>Lat :  52.38017<br>Lon :  13.01525<br>Erreichen :  1<br>Finden :  1<br>Zeile :  457","Titel :  Projekt 2011 ds tb<br>Lat :  52.38319<br>Lon :  13.00874<br>Erreichen :  1<br>Finden :  1<br>Zeile :  458","Titel :  Wildmeisterei<br>Lat :  52.38518<br>Lon :  13.00140<br>Erreichen :  1<br>Finden :  1<br>Zeile :  459","Titel :  Kreis der Holzdruiden<br>Lat :  52.39156<br>Lon :  12.99715<br>Erreichen :  1<br>Finden :  1<br>Zeile :  460","Titel :  Wegestern Wildpark - Rätsel<br>Lat :  52.38836<br>Lon :  12.99983<br>Erreichen :  1<br>Finden :  1<br>Zeile :  461","Titel :  Badestelle<br>Lat :  52.38370<br>Lon :  13.02674<br>Erreichen :  1<br>Finden :  1<br>Zeile :  462","Titel :  Badestelle<br>Lat :  52.39288<br>Lon :  13.04501<br>Erreichen :  1<br>Finden :  1<br>Zeile :  463","Titel :  Postleitzahl 14467<br>Lat :  52.39306<br>Lon :  13.04487<br>Erreichen :  1<br>Finden :  2<br>Zeile :  464","Titel :  Badestelle?<br>Lat :  52.41127<br>Lon :  12.94378<br>Erreichen :  1<br>Finden :  1<br>Zeile :  465","Titel :  Badestelle?<br>Lat :  52.39557<br>Lon :  12.93999<br>Erreichen :  1<br>Finden :  1<br>Zeile :  466","Titel :  Gold<br>Lat :  52.40539<br>Lon :  13.04048<br>Erreichen :  1<br>Finden :  1<br>Zeile :  417","Titel :  Giraffe<br>Lat :  52.40031<br>Lon :  13.01067<br>Erreichen :  2<br>Finden :  4<br>Zeile :  261","Titel :  Schloss Lindstedt<br>Lat :  52.40993<br>Lon :  13.00995<br>Erreichen :  2<br>Finden :  2<br>Zeile :   27","Titel :  Teichauslass<br>Lat :  52.41187<br>Lon :  13.00569<br>Erreichen :  2<br>Finden :  3<br>Zeile :   17","Titel :  Holzkopf<br>Lat :  52.41228<br>Lon :  13.00659<br>Erreichen :  2<br>Finden :  3<br>Zeile :   79","Titel :  Mauer 64ukr<br>Lat :  52.41522<br>Lon :  13.01291<br>Erreichen :  2<br>Finden :  1<br>Zeile :   35","Titel :  Steinplatten im Waldboden<br>Lat :  52.41528<br>Lon :  12.99037<br>Erreichen :  2<br>Finden :  3<br>Zeile :  141","Titel :  kleine Burg<br>Lat :  52.41961<br>Lon :  13.00190<br>Erreichen :  2<br>Finden :  2<br>Zeile :   36","Titel :  Wegweiser<br>Lat :  52.42323<br>Lon :  12.97994<br>Erreichen :  2<br>Finden :  3<br>Zeile :  142","Titel :  Planet 2011<br>Lat :  52.42480<br>Lon :  12.96789<br>Erreichen :  3<br>Finden :  4<br>Zeile :  175","Titel :  Zweigstelle Kinderauslieferungsdienst<br>Lat :  52.40772<br>Lon :  12.96158<br>Erreichen :  3<br>Finden :  3<br>Zeile :  292","Titel :  Aussichtsplattform<br>Lat :  52.40670<br>Lon :  12.96244<br>Erreichen :  3<br>Finden :  2<br>Zeile :   15","Titel :  Schafe mit Lamm<br>Lat :  52.40474<br>Lon :  12.96098<br>Erreichen :  3<br>Finden :  2<br>Zeile :  260","Titel :  Richtung Schweiz<br>Lat :  52.42523<br>Lon :  12.93854<br>Erreichen :  3<br>Finden :  3<br>Zeile :  204","Titel :  Brücke<br>Lat :  52.41803<br>Lon :  12.93506<br>Erreichen :  3<br>Finden :  2<br>Zeile :    3","Titel :  Türmchen<br>Lat :  52.39320<br>Lon :  12.93882<br>Erreichen :  3<br>Finden :  2<br>Zeile :   44","Titel :  Vulkan-Werk<br>Lat :  52.39208<br>Lon :  12.93048<br>Erreichen :  4<br>Finden :  3<br>Zeile :  113","Titel :  Grüne Innenarchitektur<br>Lat :  52.39122<br>Lon :  12.94914<br>Erreichen :  3<br>Finden :  3<br>Zeile :  316","Titel :  Pumpe<br>Lat :  52.39063<br>Lon :  12.95506<br>Erreichen :  3<br>Finden :  3<br>Zeile :  153","Titel :  Kanaldurchlass<br>Lat :  52.39300<br>Lon :  12.96075<br>Erreichen :  3<br>Finden :  2<br>Zeile :  154","Titel :  Bushaltestelle_Wartehäuschen<br>Lat :  52.38678<br>Lon :  12.95320<br>Erreichen :  3<br>Finden :  2<br>Zeile :   43","Titel :  Sitzecke<br>Lat :  52.38822<br>Lon :  12.96477<br>Erreichen :  3<br>Finden :  3<br>Zeile :  315","Titel :  Entenfang_Schild<br>Lat :  52.38767<br>Lon :  12.96470<br>Erreichen :  3<br>Finden :  3<br>Zeile :   94","Titel :  Gedenkstein (rote Schrift)<br>Lat :  52.39143<br>Lon :  12.98573<br>Erreichen :  2<br>Finden :  2<br>Zeile :   76","Titel :  Grafitti Wohnwagen<br>Lat :  52.39940<br>Lon :  12.97454<br>Erreichen :  3<br>Finden :  2<br>Zeile :  152"],null,null,{"interactive":false,"permanent":false,"direction":"auto","opacity":1,"offset":[0,0],"textsize":"10px","textOnly":false,"className":"","sticky":true},null]},{"method":"addControlGPS","args":[{"position":"topleft","activate":true,"autoCenter":false,"maxZoom":60,"setView":true}]}],"limits":{"lat":[52.379904,52.425228],"lng":[12.930485,13.045007]}},"evals":[],"jsHooks":[]}</script>
-<script type="application/htmlwidget-sizing" data-for="htmlwidget-9cbf807cba4a76ee1bb9">{"viewer":{"width":"100%","height":400,"padding":0,"fill":true},"browser":{"width":"100%","height":400,"padding":0,"fill":true}}</script>
+<script type="application/json" data-for="htmlwidget-b1977f5fcd1d5f073247">{"x":{"options":{"crs":{"crsClass":"L.CRS.EPSG3857","code":null,"proj4def":null,"projectedBounds":null,"options":{}}},"calls":[{"method":"addTiles","args":["//{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",null,"OSM (default)",{"errorTileUrl":"","noWrap":false,"detectRetina":false,"maxZoom":19,"attribution":"&copy; <a href=\"http://openstreetmap.org\">OpenStreetMap<\/a> contributors, <a href=\"http://creativecommons.org/licenses/by-sa/2.0/\">CC-BY-SA<\/a>"}]},{"method":"addProviderTiles","args":["Esri.WorldImagery",null,"Esri WorldImagery",{"errorTileUrl":"","noWrap":false,"detectRetina":false,"maxZoom":20}]},{"method":"addLayersControl","args":[["OSM (default)","Esri WorldImagery"],[],{"collapsed":false,"autoZIndex":true,"position":"topright"}]},{"method":"addCircleMarkers","args":[[52.400032,52.402534,52.40993,52.41228,52.41522,52.41961,52.423233,52.417387,52.4248022313357,52.430235,52.425228,52.41803,52.395574,52.415278,52.408282,52.40645,52.40578,52.398546,52.411267,52.39323,52.3912183,52.3906312076997,52.3929976038969,52.38767,52.39143,52.391561,52.388361,52.38376,52.380172,52.379904,52.380089,52.383703,52.388787,52.390937,52.392882],[13.032058,13.016518,13.00995,13.00659,13.01291,13.0019,12.979943,12.968393,12.96788555411,12.955961,12.938539,12.93506,12.939991,12.990367,12.976761,12.96233,12.95046,12.94931,12.943781,12.93914,12.949145,12.9550591042995,12.9607539388517,12.9647,12.98573,12.997148,12.999826,12.99724,13.015249,13.018781,13.021519,13.026742,13.032416,13.036936,13.045007],10,null,null,{"interactive":true,"className":"","stroke":true,"color":["red","red","red","red","orange","orange","orange","orange","orange","orange","orange","orange","blue","black","black","black","red","black","blue","black","black","black","orange","black","black","orange","black","orange","black","black","orange","blue","black","black","blue"],"weight":5,"opacity":0.5,"fill":true,"fillColor":["red","red","red","red","orange","orange","orange","orange","orange","orange","orange","orange","blue","black","black","black","red","black","blue","black","black","black","orange","black","black","orange","black","orange","black","black","orange","blue","black","black","blue"],"fillOpacity":0.2},null,null,["ID :   1<br>Titel :  Rätsel - ToDo 1<br>Lat :  52.40003<br>Lon :  13.03206<br>Gruppe :  Rätsel","ID :   2<br>Titel :  Rätsel - ToDo 2<br>Lat :  52.40253<br>Lon :  13.01652<br>Gruppe :  Rätsel","ID :   3<br>Titel :  Schloss Lindstedt<br>Lat :  52.40993<br>Lon :  13.00995<br>Gruppe :  Rätsel","ID :   4<br>Titel :  Holzkopf<br>Lat :  52.41228<br>Lon :  13.00659<br>Gruppe :  Rätsel","ID :   5<br>Titel :  Mauer 64ukr<br>Lat :  52.41522<br>Lon :  13.01291<br>Gruppe :  Bonus","ID :   6<br>Titel :  kleine Burg<br>Lat :  52.41961<br>Lon :  13.00190<br>Gruppe :  Bonus","ID :   7<br>Titel :  Wegweiser<br>Lat :  52.42323<br>Lon :  12.97994<br>Gruppe :  Bonus","ID :   8<br>Titel :  Rätsel - ToDo 4<br>Lat :  52.41739<br>Lon :  12.96839<br>Gruppe :  Bonus","ID :   9<br>Titel :  Planet 2011<br>Lat :  52.42480<br>Lon :  12.96789<br>Gruppe :  Bonus","ID :  10<br>Titel :  Rätsel - ToDo 5<br>Lat :  52.43024<br>Lon :  12.95596<br>Gruppe :  Bonus","ID :  11<br>Titel :  Richtung Schweiz<br>Lat :  52.42523<br>Lon :  12.93854<br>Gruppe :  Bonus","ID :  12<br>Titel :  Brücke<br>Lat :  52.41803<br>Lon :  12.93506<br>Gruppe :  Bonus","ID :  13<br>Titel :  Badestelle?<br>Lat :  52.39557<br>Lon :  12.93999<br>Gruppe :  Badestelle","ID :  14<br>Titel :  Steinplatten im Waldboden<br>Lat :  52.41528<br>Lon :  12.99037<br>Gruppe :  Foto","ID :  15<br>Titel :  Rätsel - ToDo 3<br>Lat :  52.40828<br>Lon :  12.97676<br>Gruppe :  Foto","ID :  16<br>Titel :  Aussichtsplattform<br>Lat :  52.40645<br>Lon :  12.96233<br>Gruppe :  Foto","ID :  17<br>Titel :  Rätsel - ToDo 6<br>Lat :  52.40578<br>Lon :  12.95046<br>Gruppe :  Rätsel","ID :  18<br>Titel :  Hohle Bäume<br>Lat :  52.39855<br>Lon :  12.94931<br>Gruppe :  Foto","ID :  19<br>Titel :  Badestelle?<br>Lat :  52.41127<br>Lon :  12.94378<br>Gruppe :  Badestelle","ID :  20<br>Titel :  Türmchen<br>Lat :  52.39323<br>Lon :  12.93914<br>Gruppe :  Foto","ID :  21<br>Titel :  Grüne Innenarchitektur<br>Lat :  52.39122<br>Lon :  12.94914<br>Gruppe :  Foto","ID :  22<br>Titel :  Pumpe<br>Lat :  52.39063<br>Lon :  12.95506<br>Gruppe :  Foto","ID :  23<br>Titel :  Kanaldurchlass<br>Lat :  52.39300<br>Lon :  12.96075<br>Gruppe :  Bonus","ID :  24<br>Titel :  Entenfang_Schild<br>Lat :  52.38767<br>Lon :  12.96470<br>Gruppe :  Foto","ID :  25<br>Titel :  Gedenkstein (rote Schrift)<br>Lat :  52.39143<br>Lon :  12.98573<br>Gruppe :  Foto","ID :  26<br>Titel :  Kreis der Holzdruiden<br>Lat :  52.39156<br>Lon :  12.99715<br>Gruppe :  Bonus","ID :  27<br>Titel :  Wegestern Wildpark - Rätsel<br>Lat :  52.38836<br>Lon :  12.99983<br>Gruppe :  Foto","ID :  28<br>Titel :  Gedenkstein (schwarze Schrift) ('10, '13, '15)<br>Lat :  52.38376<br>Lon :  12.99724<br>Gruppe :  Bonus","ID :  29<br>Titel :  Franzosen und Russen gehört das Land, das Meer gehört den Briten. Wir aber besitzen im Luftreich des Traums die Herrschaft unbestritten. Heinrich Heine<br>Lat :  52.38017<br>Lon :  13.01525<br>Gruppe :  Foto","ID :  30<br>Titel :  Olympische Statuen<br>Lat :  52.37990<br>Lon :  13.01878<br>Gruppe :  Foto","ID :  31<br>Titel :  Stammkreis<br>Lat :  52.38009<br>Lon :  13.02152<br>Gruppe :  Bonus","ID :  32<br>Titel :  Badestelle<br>Lat :  52.38370<br>Lon :  13.02674<br>Gruppe :  Badestelle","ID :  33<br>Titel :  311BGron1927 Arnhem<br>Lat :  52.38879<br>Lon :  13.03242<br>Gruppe :  Foto","ID :  34<br>Titel :  Bugatti - vorher existenz prüfen<br>Lat :  52.39094<br>Lon :  13.03694<br>Gruppe :  Foto","ID :  35<br>Titel :  Badestelle<br>Lat :  52.39288<br>Lon :  13.04501<br>Gruppe :  Badestelle"],null,null,{"interactive":false,"permanent":false,"direction":"auto","opacity":1,"offset":[0,0],"textsize":"10px","textOnly":false,"className":"","sticky":true},null]},{"method":"addControlGPS","args":[{"position":"topleft","activate":true,"autoCenter":false,"maxZoom":60,"setView":true}]}],"limits":{"lat":[52.379904,52.430235],"lng":[12.93506,13.045007]}},"evals":[],"jsHooks":[]}</script>
+<script type="application/htmlwidget-sizing" data-for="htmlwidget-b1977f5fcd1d5f073247">{"viewer":{"width":"100%","height":400,"padding":0,"fill":true},"browser":{"width":"100%","height":400,"padding":0,"fill":true}}</script>
 </body>
 </html>

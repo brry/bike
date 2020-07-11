@@ -2,27 +2,25 @@
 # Berry Boessenkool, Jul/Sept 2019, berry-b@gmx.de
 
 library(leaflet) # leaflet, addTiles, addCircleMarkers
-library(leaflet.extras) # addControlGPS, gpsOptions, activateGPS
-library(berryFunctions) # seqPal, classify, popleaf
+library(leaflet.extras) # addControlGPS, gpsOptions, activateGPS, addFullscreenControl
+library(berryFunctions) # seqPal, classify, popleaf (truncate since Version 1.19.6, 2020-07-11)
 library(OSMscale) # github dev version! earthDist, pointsMap, projectPoints, posm
 
 # Postenliste ----
 
+{
 p <- readxl::read_excel("PORT_Posten.xls")
 p$Zeile <- 1:nrow(p) # Fuer Routen Auswahl
-p$popup <- popleaf(p, -(6:7))
+p$popup <- popleaf(p)
+}
 
 leaflet(p) %>% addTiles() %>% addCircleMarkers(~Lon, ~Lat, popup=~popup)
 
-# Fuer alle:
-p_route <- p
-p_route$Finden[1] <- 7 # 5 sollte ein dnkleres blau werden
-p_route$col <- classify(p_route$Finden, col=seqPal, b=TRUE, breaks=NULL, reverse=TRUE)
-leaflet(p_route) %>% addTiles() %>%  addCircleMarkers(~Lon, ~Lat, popup=~popup,color=~col)
 
 
 # Route ----
 
+{
 zern <- readxl::read_excel("Zernsee_Liste.xlsx")
 p_route <- p[zern$Zeile,]
 p_route$ID <- NULL
@@ -31,31 +29,29 @@ p_route$Erreichen <- NULL
 p_route$Finden <- NULL
 p_route$Zeile <- NULL
 p_route$Gruppe <- zern$Gruppe
+rg <- zern$Gruppe=="Rätsel"
+p_route$Titel[rg] <- zern$Frage[rg]
 p_route$popup <- NULL
-p_route$popup <- popleaf(p_route)
+p_route$popup <- popleaf(p_route, truncate=40)
 cols <- c(Foto="black",Rätsel="red",Bonus="orange",Badestelle="blue")
 p_route$col <- unname(cols[zern$Gruppe])
-rm(cols, zern)
+rm(cols, zern, rg)
+}
 
 leaflet(p_route) %>% addTiles() %>%
       # addCircleMarkers(p$Lon, p$Lat, popup=p$popup, col="grey") %>% 
        addCircleMarkers(~Lon, ~Lat, popup=~popup, col=~col) %>% leafem::addMouseCoordinates()
 
+# Fuer alle:
+if(F){
+p_route <- p
+p_route$Finden[1] <- 7 # 5 sollte ein dunkleres blau werden
+p_route$col <- classify(p_route$Finden, col=seqPal, b=TRUE, breaks=NULL, reverse=TRUE)
+leaflet(p_route) %>% addTiles() %>%  addCircleMarkers(~Lon, ~Lat, popup=~popup,color=~col)
+}
 
 
 
-# Futterpaket - eigene Website?
-# https://stackoverflow.com/q/62815436
-
-leaflet() %>% setView(12.94, 52.395, 16) %>% 
-     addCircleMarkers(12.94, 52.395, popup="Futter!") %>% 
-  addTiles(group = "OSM (default)", options=providerTileOptions(maxZoom=19)) %>%
-  addProviderTiles(providers$Esri.WorldImagery, group="Esri WorldImagery", 
-                   options=providerTileOptions(maxZoom=20)) %>%
-  addLayersControl(baseGroups=c("OSM (default)", "Esri WorldImagery"),
-                   options=layersControlOptions(collapsed=FALSE)) %>% 
-  addControlGPS(options=gpsOptions(position="topleft", 
-                activate=TRUE, autoCenter=FALSE, setView=TRUE))
 
 
 
@@ -63,26 +59,28 @@ leaflet() %>% setView(12.94, 52.395, 16) %>%
 
 
 write.table(p_route[,1:5], file="Posten.txt", sep="\t", quote=FALSE, row.names=FALSE)
-# Manuell in Excel kopieren und dort ergaenzen
+# Manuell in Excel kopieren, farblich formatieren, Zeilenumbrüche einschalten und als PDF exportieren
 
 
 # Karte PDF ----
 
 if(!file.exists("osmap.Rdata"))  {
-  osmap14 <- pointsMap(Lat,Lon, data=p_route, zoom=14)
-  save(osmap14, file="osmap.Rdata")
+  osmap <- pointsMap(Lat,Lon, data=p_route, zoom=14, fx=0.06, fy=0.015)
+  save(osmap, file="osmap.Rdata")
   }
 load("osmap.Rdata")
 ppr <- projectPoints(Lat,Lon, data=p_route, to=posm(), quiet=TRUE)
 
 {
+pdfcol <- gsub("orange", "orange3", p_route$col)
 pdf("Zernsee_Karte.pdf", height=8.27, width=11.96)
-pointsMap(Lat,Lon, data=p_route, map=osmap14, quiet=TRUE, pch=1, cex=1.5, 
-          col=p_route$col, x=0.55)
-textField(ppr$x+70, ppr$y, p_route$ID,      cex=1,   adj=c(0,0), col=p_route$col, fill=addAlpha("white", 0.5))
-textField(osmap14$bbox$p1[1]+200, osmap14$bbox$p1[2]-200, "brry.github.io/bike (zoombar)", 
+pointsMap(Lat,Lon, data=p_route, map=osmap, quiet=TRUE, pch=1, cex=1.5, 
+          col=pdfcol, x=0.55)
+textField(ppr$x+70, ppr$y, p_route$ID,      cex=1,   adj=c(0,0), col=pdfcol, fill=addAlpha("white", 0.5))
+textField(osmap$bbox$p1[1]+200, osmap$bbox$p1[2]-200, "brry.github.io/bike (zoombar)", 
           adj=c(0,1))
 dev.off()
+rm(pdfcol)
 }
 
 
@@ -90,14 +88,31 @@ dev.off()
 
 {
 map <- leaflet(p_route) %>% 
-    addTiles(group = "OSM (default)", options=providerTileOptions(maxZoom=19)) %>%
-    addProviderTiles(providers$Esri.WorldImagery, group="Esri WorldImagery", 
+    addTiles(group = "OSM", options=providerTileOptions(maxZoom=19)) %>%
+    addProviderTiles(providers$Esri.WorldImagery, group="Sat", 
                      options=providerTileOptions(maxZoom=20)) %>%
-    addLayersControl(baseGroups=c("OSM (default)", "Esri WorldImagery"),
+    addLayersControl(baseGroups=c("OSM", "Sat"),
+                     overlayGroups="Proviant",
                      options=layersControlOptions(collapsed=FALSE)) %>% 
     addCircleMarkers(~Lon, ~Lat, popup=~popup,color=~col) %>% #, stroke=F,radius=6)
     addControlGPS(options=gpsOptions(position="topleft", 
-                  activate=TRUE, autoCenter=FALSE, maxZoom=60, setView=TRUE))
+                  activate=TRUE, autoCenter=FALSE, maxZoom=60, setView=TRUE)) %>% 
+    addFullscreenControl() %>% 
+    hideGroup("Proviant") %>% 
+    htmlwidgets::onRender("function(el, x){
+    var myMap = this;
+    var secretmarker = L.circleMarker([52.395179, 12.939338], {color:'red'})
+    secretmarker.bindPopup('Futter');
+    myMap.on('overlayadd', function(e){
+       if (e.name === 'Proviant'){
+          var secretkey = prompt('Kennwort eingeben (alles klein): '); 
+          if (secretkey === 'futter'){ secretmarker.addTo(myMap);
+          } else  alert('Falsches Kennwort'); 
+    }})
+    myMap.on('overlayremove', function(e){
+       if (e.name === 'Proviant') secretmarker.remove();
+    })
+  }")
 # exportieren:
 htmlwidgets::saveWidget(map, "index.html", selfcontained=TRUE)
 # HTML head fuer mobile Geraete:
@@ -110,8 +125,7 @@ writeLines(map_h, "index.html") ; rm(map_h)
   
 
 
-
-
+print(map)
 
 
 
@@ -123,7 +137,7 @@ if(FALSE) { # Alles weitere beim Sourcen ignoriert
 
 # OSMtracker GPX Datei ----
 # Fuer neue Stationen
-gpxfile <- "2020-06-24_19-31-09.gpx"
+gpxfile <- "2020-07-11_14-23-59.gpx"
 visGPX::visGPX(gpxfile, plot_static=FALSE, wp_column="name")
 wp <- plotKML::readGPX(gpxfile)$waypoints
 clipr::write_clip(data.frame(wp$name, round(wp$lat,6),round(wp$lon,6)))
